@@ -52,7 +52,11 @@ set(CORE_SOURCES
     #src/core/storage_manager.cpp
     #src/format/csv_formatter.cpp
     #src/platform/net_platform.cpp
-)
+    )
+
+set(CORE_INCLUDES
+    server/core/include
+    )
 
 # ==============================================================================
 # Transport protocols
@@ -118,9 +122,12 @@ add_executable(${CMAKE_PROJECT_NAME}_server
     ${TRANSPORT_SOURCES}
 )
 
+target_include_directories(${CMAKE_PROJECT_NAME}_server PUBLIC
+    ${CORE_INCLUDES}
+)
+
 target_include_directories(${CMAKE_PROJECT_NAME}_server
     PRIVATE
-        src
         ${TRANSPORT_INCLUDES}
 )
 

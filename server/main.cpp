@@ -1,4 +1,6 @@
 //#include <confparser.h>
+#include <core/common/systypes.h>
+#include <core/protocol/transportprotocol.h>
 #include <string>
 #include <cstddef>
 #include <cstdint>
