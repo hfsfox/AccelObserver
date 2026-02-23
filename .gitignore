@@ -49,6 +49,7 @@ CMakeUserPresets.json
 *.hex
 # build dirs
 /build*
+/_build*
 /objects*
 /.cache*
 /.vs*
