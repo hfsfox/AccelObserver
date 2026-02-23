@@ -33,6 +33,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+# =============================================================================
+# Misc. settings
+# =============================================================================
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 # =============================================================================
 # Build options
@@ -181,6 +185,7 @@ endif()
 #
 
 get_target_property(OUT_LINK_LIBS ${CMAKE_PROJECT_NAME}_server LINK_LIBRARIES)
+get_target_property(OUT_BUILD_FLAGS ${CMAKE_PROJECT_NAME}_server COMPILE_FLAGS)
 
 # ==============================================================================
 # Build config output
@@ -195,6 +200,7 @@ ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "Target arch:            ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "Build C flags:          ${CMAKE_C_FLAGS}")
 message(STATUS "Build CXX flags:        ${CMAKE_CXX_FLAGS}")
+message(STATUS "Build flags:            ${OUT_BUILD_FLAGS}")
 message(STATUS "Link libraries:         ${OUT_LINK_LIBS}")
 message(STATUS "Build type:             ${CMAKE_BUILD_TYPE}")
 message(STATUS "WebSocket:              ${ENABLE_WEBSOCKET}")
