@@ -27,6 +27,12 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+# =============================================================================
+# Standard: Required C11.
+# =============================================================================
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # =============================================================================
 # Build options
@@ -102,19 +108,19 @@ endif()
 # =============================================================================
 # Server executable
 # =============================================================================
-add_executable(data_subscriber
+add_executable(${CMAKE_PROJECT_NAME}_server
     server/main.cpp
     ${CORE_SOURCES}
     ${TRANSPORT_SOURCES}
 )
 
-target_include_directories(data_subscriber
+target_include_directories(${CMAKE_PROJECT_NAME}_server
     PRIVATE
         src
         ${TRANSPORT_INCLUDES}
 )
 
-target_compile_definitions(data_subscriber
+target_compile_definitions(${CMAKE_PROJECT_NAME}_server
     PRIVATE
         ${TRANSPORT_DEFINES}
 )
@@ -123,37 +129,37 @@ target_compile_definitions(data_subscriber
 # Link platform libraries
 # =============================================================================
 if(WIN32)
-    # Winsock2 — ws2_32 и mswsock
-    target_link_libraries(data_subscriber PRIVATE ws2_32 mswsock)
+    # Winsock2 — ws2_32 and mswsock
+    target_link_libraries(${CMAKE_PROJECT_NAME}_server PRIVATE ws2_32 mswsock)
 endif()
 
 if(TRANSPORT_LIBS)
-    target_link_libraries(data_subscriber PRIVATE ${TRANSPORT_LIBS})
+    target_link_libraries(${CMAKE_PROJECT_NAME}_server PRIVATE ${TRANSPORT_LIBS})
 endif()
 
 # pthreads on UNIX (std::thread requirement)
 if(UNIX)
     find_package(Threads REQUIRED)
-    target_link_libraries(data_subscriber PRIVATE Threads::Threads)
+    target_link_libraries(${CMAKE_PROJECT_NAME}_server PRIVATE Threads::Threads)
 endif()
 
 # =============================================================================
 # Compiler warnings
 # =============================================================================
 if(MSVC)
-    target_compile_options(data_subscriber PRIVATE
-        /W4          # Уровень 4 предупреждений
-        /wd4100      # Подавить: unreferenced formal parameter
-        /wd4996      # Подавить: deprecated POSIX names
+    target_compile_options(${CMAKE_PROJECT_NAME}_server PRIVATE
+        /W4          # 4th warning level
+        /wd4100      # inhibit: unreferenced formal parameter
+        /wd4996      # inhibit: deprecated POSIX names
     )
-    add_compile_definitions( data_subscriber PRIVATE
+    add_compile_definitions(${CMAKE_PROJECT_NAME}_server PRIVATE
     UNICODE=1
     _UNICODE=1
     NOMINMAX=1
     )
 else()
     # GCC / Clang
-    target_compile_options(data_subscriber PRIVATE
+    target_compile_options(${CMAKE_PROJECT_NAME}_server PRIVATE
         -Wall
         -Wextra
         -Wpedantic
@@ -174,16 +180,18 @@ endif()
 #
 #
 
-get_target_property(OUT_LINK_LIBS data_subscriber LINK_LIBRARIES)
+get_target_property(OUT_LINK_LIBS ${CMAKE_PROJECT_NAME}_server LINK_LIBRARIES)
 
 # ==============================================================================
 # Build config output
 # ==============================================================================
 message(STATUS "")
 message(STATUS "=== ${CMAKE_PROJECT_NAME} build configuration ===")
+message(STATUS "C standard:             C${CMAKE_C_STANDARD}")
 message(STATUS "C++ standard:           C++${CMAKE_CXX_STANDARD}")
 message(STATUS "Platform:               ${CMAKE_SYSTEM_NAME}")
-message(STATUS "Compiler:               ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "Compiler:               ${CMAKE_CXX_COMPILER_ID} \
+${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "Target arch:            ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "Build C flags:          ${CMAKE_C_FLAGS}")
 message(STATUS "Build CXX flags:        ${CMAKE_CXX_FLAGS}")
@@ -197,4 +205,4 @@ message(STATUS "")
 # ==============================================================================
 # Install (optional)
 # ==============================================================================
-install(TARGETS data_subscriber RUNTIME DESTINATION bin)
+install(TARGETS ${CMAKE_PROJECT_NAME}_server RUNTIME DESTINATION bin)
