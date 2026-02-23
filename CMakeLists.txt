@@ -171,7 +171,7 @@ else()
     )
 endif()
 
-# Enable all warnings in Debug mode
+# Enable all warnings also in Debug mode
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         add_compile_options(-Wall -Wextra -Wpedantic)
