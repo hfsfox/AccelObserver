@@ -13,10 +13,8 @@ namespace server
                     int rc = WSAStartup(MAKEWORD(2, 2), &wsa);
                         if(rc == 0)
                             return core::status::STATUS_OK;
-                //#else
                 #endif
                     return core::status::STATUS_OK; // POSIX - no-op
-                //#endif
             };
             void network_cleanup(void)
             {
@@ -24,6 +22,21 @@ namespace server
                     WSACleanup();
                 #endif
             };
+            std::string last_socket_error(void)
+            {
+                #ifdef _WIN32
+                    char buf[256] = {};
+                    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM \
+                    | FORMAT_MESSAGE_IGNORE_INSERTS,
+                               nullptr,
+                               static_cast<DWORD>(WSAGetLastError()),
+                               0, buf, sizeof(buf), nullptr);
+                    return buf;
+                #else
+                    return std::strerror(errno);
+                #endif
+            }
+
         }
     }
 }

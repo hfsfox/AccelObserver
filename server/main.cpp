@@ -1,59 +1,38 @@
-//#include <confparser.h>
-//#include <core/common/systypes.h>
-//#include <core/protocol/transportprotocol.h>
-//#include <core/config/serverconfig.h>
-//#include <string>
-//#include <cstddef>
-//#include <cstdint>
 #include <core/core.h>
-
-/*
-namespace server
-{
-    namespace core
-    {
-        namespace types
-        {
-            enum class transport_type
-            {
-                mqtt,
-                websocket
-            };
-        }
-    }
-    namespace confparser
-    {
-        struct config
-        {
-            //server::core::types::protocol_type_t protocol = server::core::types::protocol_type_t::websocket;
-            server::core::types::transport_type protocol = server::core::types::transport_type::websocket;
-            std::string     host = "localhost";
-            uint16_t        port = 8080;
-            std::size_t     buffer_capacity = 4096;   ///< Максимальный размер кольцевого буфера (пакеты)
-            std::size_t     flush_interval_ms = 500;  ///< Период сброса буфера на диск (мс)
-        };
-    }
-}
-*/
-
-/*
-static server::confparser::config parse_args(int argc, char* argv[])
-{
-    server::confparser::config conf;
-
-    return conf;
-}
-*/
+#include <format/iformatter.h>
+#include <format/impl/csvformatter.h>
+#include <memory>
 
 int main(int argc, char* argv[])
 {
-    //server::confparser::config conf = parse_args(argc, argv);
     server::core::types::config_t conf = server::core::parse_args(argc, argv);
 
     if(server::core::network::network_init() != server::core::status::STATUS_OK)
     {
+        std::cerr << "[FATAL] Network init failed: "
+        << server::core::network::last_socket_error() << "\n";
         server::core::network::network_cleanup();
+        return 1;
     }
+
+    // create storage manger for reingbuffer and write stream
+
+    auto foramtter = std::unique_ptr<server::format::IFormatter>(
+        new server::format::CsvFormatter());
+
+    // ---- Создание StorageManager (буфер + поток записи) -------------------
+    /*
+    auto formatter = std::unique_ptr<subscriber::IFormatter>(
+        new subscriber::CsvFormatter());
+
+    subscriber::StorageManager storage(
+        std::move(formatter),
+                                       cfg.output_file,
+                                       cfg.buffer_capacity,
+                                       cfg.flush_interval_ms
+    );
+    storage.start();
+    */
 
     return 0;
 }

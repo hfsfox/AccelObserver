@@ -41,8 +41,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 # =============================================================================
 # Build options
 # =============================================================================
-option(ENABLE_MQTT      "Build with MQTT support (requires libmosquitto)" ON)
-option(ENABLE_WEBSOCKET "Build with WebSocket server support"             ON)
+option(ENABLE_OUTPUT_CSV "Build with CSV output support"                   ON)
+option(ENABLE_MQTT       "Build with MQTT support (requires libmosquitto)" ON)
+option(ENABLE_WEBSOCKET  "Build with WebSocket server support"             ON)
 
 # =============================================================================
 # Core sources
@@ -66,6 +67,30 @@ set(CORE_INCLUDES
 set(SCTL_INCLUDES
     server/sctl/include
     )
+
+# =============================================================================
+# Output format sources
+# =============================================================================
+set(FORMAT_SOURCES "")
+set(FORMAT_DEFINES "")
+set(FORMAT_INCLUDES "")
+set(FORMAT_LIBS "")
+
+set(FORMAT_INCLUDES
+    server/format/include
+    )
+
+#set(FORMAT_SOURCES
+#    server/format/source/impl/csvformatter.cpp
+#    )
+
+if(ENABLE_OUTPUT_CSV)
+    list(APPEND FORMAT_SOURCES server/format/source/impl/csvformatter.cpp)
+    list(APPEND FORMAT_DEFINES HAVE_OUTPUT_CSV)
+    message(STATUS "CSV support: ON")
+else()
+    message(STATUS "CSV support: OFF")
+endif()
 
 # ==============================================================================
 # Transport protocols
@@ -128,11 +153,13 @@ endif()
 add_executable(${CMAKE_PROJECT_NAME}_server
     server/main.cpp
     ${CORE_SOURCES}
+    ${FORMAT_SOURCES}
     ${TRANSPORT_SOURCES}
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME}_server PUBLIC
     ${CORE_INCLUDES}
+    ${FORMAT_INCLUDES}
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME}_server
