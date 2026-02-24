@@ -205,7 +205,7 @@ get_target_property(OUT_BUILD_FLAGS ${CMAKE_PROJECT_NAME}_server COMPILE_FLAGS)
 # Build config output
 # ==============================================================================
 message(STATUS "")
-message(STATUS "=== ${CMAKE_PROJECT_NAME} build configuration ===")
+message(STATUS "${CMAKE_PROJECT_NAME}_server build configuration:")
 message(STATUS "C standard:             C${CMAKE_C_STANDARD}")
 message(STATUS "C++ standard:           C++${CMAKE_CXX_STANDARD}")
 message(STATUS "Platform:               ${CMAKE_SYSTEM_NAME}")
