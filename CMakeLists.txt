@@ -52,6 +52,8 @@ set(CORE_SOURCES
     #src/core/storage_manager.cpp
     #src/format/csv_formatter.cpp
     #src/platform/net_platform.cpp
+    server/core/source/statuscode.cpp
+    server/core/source/network/networkstack.cpp
     )
 
 set(CORE_INCLUDES

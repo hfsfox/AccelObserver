@@ -1,6 +1,8 @@
 #ifndef __NETWORKSTACK_H__
 #define __NETWORKSTACK_H__
 
+#include <core/common/statuscode.h>
+
 // Platform-specific socket headers
 #ifdef _WIN32
 #  ifndef WIN32_LEAN_AND_MEAN
@@ -33,17 +35,24 @@ using socket_t = int;
 #include <cstdint>
 #include <string>
 
-namespace core
+namespace server
 {
-    namespace network
+    namespace core
     {
-        bool network_init(void);
-        socket_t create_socket(uint16_t port, int backlog = 10);
-        bool set_nonblocking(socket_t sock, bool nonblocking);
-        std::string last_socket_error();
-        socket_t accept_client(socket_t server_sock,
+        namespace network
+        {
+            //bool network_init(void);
+            // Platform-specific network init routines
+            status_code_t network_init(void);
+            // Platform-specific network release routines
+            void network_cleanup(void);
+            socket_t create_socket(uint16_t port, int backlog = 10);
+            bool set_nonblocking(socket_t sock, bool nonblocking);
+            std::string last_socket_error();
+            socket_t accept_client(socket_t server_sock,
                        struct sockaddr_in* addr_out = nullptr,
                        socklen_t* len_out = nullptr);
+        }
     }
 }
 

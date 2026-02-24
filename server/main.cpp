@@ -49,5 +49,11 @@ int main(int argc, char* argv[])
 {
     //server::confparser::config conf = parse_args(argc, argv);
     server::core::types::config_t conf = server::core::parse_args(argc, argv);
+
+    if(server::core::network::network_init() != server::core::status::STATUS_OK)
+    {
+        server::core::network::network_cleanup();
+    }
+
     return 0;
 }
