@@ -1,27 +1,19 @@
 //#include <confparser.h>
-#include <core/common/systypes.h>
-#include <core/protocol/transportprotocol.h>
-#include <string>
-#include <cstddef>
-#include <cstdint>
+//#include <core/common/systypes.h>
+//#include <core/protocol/transportprotocol.h>
+//#include <core/config/serverconfig.h>
+//#include <string>
+//#include <cstddef>
+//#include <cstdint>
+#include <core/core.h>
 
-
+/*
 namespace server
 {
     namespace core
     {
         namespace types
         {
-            /*enum class protocol_type_t
-            {
-                mqtt,
-                websocket
-            };*/
-            /*enum class TransportType
-            {
-                MQTT,
-                WebSocket
-            };*/
             enum class transport_type
             {
                 mqtt,
@@ -42,16 +34,20 @@ namespace server
         };
     }
 }
+*/
 
+/*
 static server::confparser::config parse_args(int argc, char* argv[])
 {
     server::confparser::config conf;
 
     return conf;
 }
+*/
 
 int main(int argc, char* argv[])
 {
-    server::confparser::config conf = parse_args(argc, argv);
+    //server::confparser::config conf = parse_args(argc, argv);
+    server::core::types::config_t conf = server::core::parse_args(argc, argv);
     return 0;
 }
