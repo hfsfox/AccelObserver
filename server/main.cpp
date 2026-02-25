@@ -12,6 +12,7 @@
 #include <memory>
 #include <atomic>
 #include <csignal>
+#include <iostream>
 
 namespace
 {
@@ -52,6 +53,27 @@ int main(int argc, char* argv[])
     storage_manager.start();
 
     std::unique_ptr<server::transport::ITransport> transport;
+
+    if (conf.transport == server::core::types::transport_type_t::TRANSPORT_WEBSOCKET)
+    {
+        #ifdef HAVE_WEBSOCKET
+            //transport.reset(/*new subscriber::WsSubscriber()*/);
+        #else
+            std::cerr << "[FATAL] WebSocket support not compiled. "
+            "Rebuild with -DENABLE_WEBSOCKET=ON\n";
+            return 1;
+        #endif
+    }
+    else
+    {
+        #ifdef HAVE_MQTT
+            //sub.reset(new subscriber::MqttSubscriber("data-subscriber-1", cfg.mqtt_topic));
+        #else
+            std::cerr << "[FATAL] MQTT support not compiled. "
+            "Install libmosquitto and rebuild with -DENABLE_MQTT=ON\n";
+            return 1;
+        #endif
+    }
 
     // add signal handlers for user/system process interrupt
     std::signal(SIGINT,  signal_handler);

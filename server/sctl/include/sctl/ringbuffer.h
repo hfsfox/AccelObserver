@@ -6,14 +6,6 @@
 #include <condition_variable>
 #include <cstddef>
 
-namespace
-{
-    void lock_mutex(std::mutex _lockable_mutex)
-    {
-        std::lock_guard<std::mutex> lock(_lockable_mutex);
-    };
-}
-
 namespace server
 {
     namespace sctl
