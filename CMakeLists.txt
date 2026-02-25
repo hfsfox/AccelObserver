@@ -184,6 +184,10 @@ target_include_directories(${CMAKE_PROJECT_NAME}_server
         ${TRANSPORT_INCLUDES}
 )
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND NOT MINGW AND NOT MSVC)
+    add_compile_options(-pthread)
+endif()
+
 target_compile_definitions(${CMAKE_PROJECT_NAME}_server
     PRIVATE
         ${TRANSPORT_DEFINES}
