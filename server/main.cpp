@@ -1,6 +1,7 @@
 #include <core/core.h>
 #include <format/iformatter.h>
 #include <format/impl/csvformatter.h>
+#include <storage/storagemanager.h>
 #include <memory>
 
 int main(int argc, char* argv[])
@@ -18,7 +19,8 @@ int main(int argc, char* argv[])
     // create storage manger for reingbuffer and write stream
 
     auto foramtter = std::unique_ptr<server::format::IFormatter>(
-        new server::format::CsvFormatter());
+        new server::format::CsvFormatter()
+    );
 
     // ---- Создание StorageManager (буфер + поток записи) -------------------
     /*

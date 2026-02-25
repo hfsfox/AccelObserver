@@ -62,6 +62,13 @@ set(CORE_INCLUDES
     )
 
 # =============================================================================
+# Storage manger sources
+# =============================================================================
+set(STORAGE_MANGER_INCLUDES
+    server/storage/include
+    )
+
+# =============================================================================
 # Structure/Class Template Library sources
 # =============================================================================
 set(SCTL_INCLUDES
@@ -159,7 +166,9 @@ add_executable(${CMAKE_PROJECT_NAME}_server
 
 target_include_directories(${CMAKE_PROJECT_NAME}_server PUBLIC
     ${CORE_INCLUDES}
+    ${SCTL_INCLUDES}
     ${FORMAT_INCLUDES}
+    ${STORAGE_MANGER_INCLUDES}
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME}_server
