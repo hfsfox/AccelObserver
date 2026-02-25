@@ -64,6 +64,9 @@ set(CORE_INCLUDES
 # =============================================================================
 # Storage manger sources
 # =============================================================================
+set(STORAGE_MANGER_SOURCES
+    server/storage/source/storagemanager.cpp
+    )
 set(STORAGE_MANGER_INCLUDES
     server/storage/include
     )
@@ -107,6 +110,8 @@ set(TRANSPORT_DEFINES "")
 set(TRANSPORT_INCLUDES "")
 set(TRANSPORT_LIBS "")
 
+list(APPEND TRANSPORT_INCLUDES server/transport/include)
+
 # ---- WebSocket (только стандартная библиотека + BSD sockets) ----------------
 if(ENABLE_WEBSOCKET)
     #list(APPEND TRANSPORT_SOURCES src/transport/ws_subscriber.cpp)
@@ -133,11 +138,12 @@ if(ENABLE_MQTT)
             /usr/lib
             /usr/local/lib
             "C:/mosquitto/lib"
+            "C:/Mosquitto/"
             "${CMAKE_SOURCE_DIR}/third_party/mosquitto/lib"
     )
 
     if(MOSQUITTO_INCLUDE_DIR AND MOSQUITTO_LIBRARY)
-        list(APPEND TRANSPORT_SOURCES  src/transport/mqtt_subscriber.cpp)
+        #list(APPEND TRANSPORT_SOURCES  src/transport/mqtt_subscriber.cpp)
         list(APPEND TRANSPORT_DEFINES  HAVE_MQTT)
         list(APPEND TRANSPORT_INCLUDES ${MOSQUITTO_INCLUDE_DIR})
         list(APPEND TRANSPORT_LIBS     ${MOSQUITTO_LIBRARY})
@@ -162,12 +168,14 @@ add_executable(${CMAKE_PROJECT_NAME}_server
     ${CORE_SOURCES}
     ${FORMAT_SOURCES}
     ${TRANSPORT_SOURCES}
+    ${STORAGE_MANGER_SOURCES}
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME}_server PUBLIC
     ${CORE_INCLUDES}
     ${SCTL_INCLUDES}
     ${FORMAT_INCLUDES}
+    ${TRANSPORT_INCLUDES}
     ${STORAGE_MANGER_INCLUDES}
 )
 

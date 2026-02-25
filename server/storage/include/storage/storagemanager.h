@@ -50,7 +50,7 @@ namespace server
             private:
 
                 std::unique_ptr<server::format::IFormatter>  _formatter;
-                std::string                  _output_filepath_;
+                std::string                  _output_filepath;
                 std::size_t                  _flush_interval_ms;
                 //RingBuffer<server::format::types::data_packet_t> _buffer;
                 server::sctl::ringbuffer<server::format::types::data_packet_t> _buffer;

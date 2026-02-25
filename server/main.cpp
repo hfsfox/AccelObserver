@@ -2,7 +2,26 @@
 #include <format/iformatter.h>
 #include <format/impl/csvformatter.h>
 #include <storage/storagemanager.h>
+#include <transport/itransport.h>
+#ifdef HAVE_WEBSOCKET
+    #include <transport/impl/websocket.h>
+#endif
+#ifdef HAVE_MQTT
+    #include <transport/impl/mqtt.h>
+#endif
 #include <memory>
+#include <atomic>
+#include <csignal>
+
+namespace
+{
+    static std::atomic<bool> g_running{true};
+
+    static void signal_handler(int /*sig*/)
+    {
+        g_running = false;
+    };
+}
 
 int main(int argc, char* argv[])
 {
@@ -18,23 +37,25 @@ int main(int argc, char* argv[])
 
     // create storage manger for reingbuffer and write stream
 
-    auto foramtter = std::unique_ptr<server::format::IFormatter>(
+    auto formatter = std::unique_ptr<server::format::IFormatter>(
         new server::format::CsvFormatter()
     );
 
-    // ---- Создание StorageManager (буфер + поток записи) -------------------
-    /*
-    auto formatter = std::unique_ptr<subscriber::IFormatter>(
-        new subscriber::CsvFormatter());
-
-    subscriber::StorageManager storage(
+    server::storage::StorageManager storage_manager
+    (
         std::move(formatter),
-                                       cfg.output_file,
-                                       cfg.buffer_capacity,
-                                       cfg.flush_interval_ms
+        conf.filename,
+        conf.buffer_capacity,
+        conf.flush_interval_ms
     );
-    storage.start();
-    */
+
+    storage_manager.start();
+
+    std::unique_ptr<server::transport::ITransport> transport;
+
+    // add signal handlers for user/system process interrupt
+    std::signal(SIGINT,  signal_handler);
+    std::signal(SIGTERM, signal_handler);
 
     return 0;
 }
