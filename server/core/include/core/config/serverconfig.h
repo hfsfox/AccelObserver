@@ -18,8 +18,8 @@ namespace server
                 core::types::transport_type_t transport = core::types::transport_type_t::TRANSPORT_WEBSOCKET;
                 std::string host = "localhost";
                 net_port_t port = 8080;
-                /*std::*/size_t buffer_capacity = 4096;   ///< Максимальный размер кольцевого буфера (пакеты) Max ringbuffer capacity
-                /*std::*/size_t flush_interval_ms = 500;  ///< Период сброса буфера на диск (мс) Flush buffer interval in ms
+                size_t buffer_capacity = 4096;   ///< Максимальный размер кольцевого буфера (пакеты) Max ringbuffer capacity
+                size_t flush_interval_ms = 500;  ///< Период сброса буфера на диск (мс) Flush buffer interval in ms
                 std::string filename = "output_data.csv"; //
             };
         }
