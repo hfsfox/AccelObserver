@@ -1,6 +1,7 @@
 #ifndef __IFORMATTER_H__
 #define __IFORMATTER_H__
 
+#include <cstdint>
 #include <vector>
 #include <string>
 
