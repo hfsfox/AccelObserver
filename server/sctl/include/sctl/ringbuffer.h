@@ -32,7 +32,6 @@ namespace server
                 bool try_push(const T& item)
                 {
                     std::lock_guard<std::mutex> lock(_mutex);
-                    //lock_mutex(_mutex);
 
                     if (_count == _capacity) return false;
                     _buffer[_tail] = item;
@@ -44,7 +43,6 @@ namespace server
                 std::vector<T> drain()
                 {
                     std::unique_lock<std::mutex> lock(_mutex);
-                    //lock_mutex(_mutex);
                     _cv.wait(lock, [this] { return _count > 0 || _stopped; });
 
                     std::vector<T> result;
@@ -62,7 +60,6 @@ namespace server
                 std::vector<T> drain_nowait()
                 {
                     std::lock_guard<std::mutex> lock(_mutex);
-                    //lock_mutex(_mutex);
                     std::vector<T> result;
                     result.reserve(_count);
                     while (_count > 0) {
@@ -76,20 +73,17 @@ namespace server
                 void stop()
                 {
                     std::lock_guard<std::mutex> lock(_mutex);
-                    //lock_mutex(_mutex);
                     _stopped = true;
                     _cv.notify_all();
                 }
                 std::size_t size() const
                 {
                     std::lock_guard<std::mutex> lock(_mutex);
-                    //lock_mutex(_mutex);
                     return _count;
                 }
                 bool empty() const
                 {
                     std::lock_guard<std::mutex> lock(_mutex);
-                    //lock_mutex(_mutex);
                     return _count == 0;
                 }
             private:
