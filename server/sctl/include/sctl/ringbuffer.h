@@ -15,7 +15,7 @@ namespace server
         class ringbuffer
         {
             public:
-                explicit ringbuffer(/*std::*/size_t capacity)
+                explicit ringbuffer(size_t capacity)
                 :
                 _buffer(capacity)
                 ,_capacity(capacity)
