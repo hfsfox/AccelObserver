@@ -19,7 +19,7 @@ namespace server
         _formatter(std::move(formatter))
         ,_output_filepath(output_filepath)
         ,_flush_interval_ms(flush_interval_ms)
-        ,_buffer(buffer_capacity)
+        ,_buffer((size_t)buffer_capacity)
         ,_running(false)
         ,_dropped_packets(0)
         ,_written_packets(0)
