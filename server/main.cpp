@@ -75,9 +75,25 @@ int main(int argc, char* argv[])
         #endif
     }
 
+    // Callback register, validation and buffer
+    /*
+    transport->set_callback([&storage_manager](const std::string& payload)
+    {
+        //auto parsed = subscriber::PacketValidator::parse(payload);
+    }*/
+
     // add signal handlers for user/system process interrupt
     std::signal(SIGINT,  signal_handler);
     std::signal(SIGTERM, signal_handler);
+
+    // Ждём сигнала остановки
+    while (g_running.load()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+
+    std::cout << "\n[INFO] Shutting down...\n";
+
+    server::core::network::network_cleanup();
 
     return 0;
 }

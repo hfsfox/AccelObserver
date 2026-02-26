@@ -13,8 +13,8 @@ namespace server
         StorageManager::StorageManager(
             std::unique_ptr<server::format::IFormatter> formatter,
                                const std::string& output_filepath,
-                               std::size_t buffer_capacity,
-                               std::size_t flush_interval_ms)
+                               size_t buffer_capacity,
+                               size_t flush_interval_ms)
         :
         _formatter(std::move(formatter))
         ,_output_filepath(output_filepath)
