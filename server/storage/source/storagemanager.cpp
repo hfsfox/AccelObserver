@@ -61,11 +61,11 @@ namespace server
 
         bool StorageManager::push(const server::format::types::data_packet_t& packet)
         {
-            /*
-            if (!_buffer.try_push(packet)) {
+            if (!_buffer.try_push(packet))
+            {
                 ++_dropped_packets;
                 return false;
-            }*/
+            }
             return true;
         }
 
