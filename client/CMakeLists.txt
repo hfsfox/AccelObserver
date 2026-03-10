@@ -7,6 +7,14 @@ add_executable( ${CMAKE_PROJECT_NAME}_client
     src/network/net_platform.c
     )
 
+if(WIN32)
+    target_link_libraries(${CMAKE_PROJECT_NAME}_client PRIVATE ws2_32)
+    target_compile_definitions(${CMAKE_PROJECT_NAME}_client PRIVATE
+        _WIN32_WINNT=0x0601
+        WIN32_LEAN_AND_MEAN
+    )
+endif()
+
 if(UNIX)
     target_link_libraries(${CMAKE_PROJECT_NAME}_client PUBLIC
     )
