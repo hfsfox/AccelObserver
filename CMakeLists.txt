@@ -276,3 +276,5 @@ message(STATUS "")
 # Install (optional)
 # ==============================================================================
 install(TARGETS ${CMAKE_PROJECT_NAME}_server RUNTIME DESTINATION bin)
+
+add_subdirectory(client)
