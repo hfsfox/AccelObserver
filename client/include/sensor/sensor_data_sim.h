@@ -1,17 +1,14 @@
 #ifndef WS_CLIENT_SENSOR_DATA_H
 #define WS_CLIENT_SENSOR_DATA_H
-/* =============================================================================
- * sensor/sensor_data.h
- * Интерфейс источника данных акселерометра.
+/*
+ * sensor/sensor_data_sim.h
+ * Accel data source
  *
- * Модуль намеренно вынесен отдельно: чтобы подключить реальный датчик,
- * достаточно заменить реализацию sensor_data.c, сохранив этот заголовок.
- *
- * Порядок использования:
- *   1. sensor_init()  — создать контекст (аллоцирует память)
- *   2. sensor_read()  — читать пакеты в цикле
- *   3. sensor_destroy() — освободить ресурсы
- * ============================================================================= */
+ * Usage cycle:
+ *   1. sensor_init()  — сcreate context (mem alloc)
+ *   2. sensor_read()  — read packets in loop
+ *   3. sensor_destroy() — free resources
+ */
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -20,69 +17,47 @@
 extern "C" {
 #endif
 
-/* --------------------------------------------------------------------------- */
-/* Пакет данных — соответствует формату data_subscriber (types.hpp)           */
-/* --------------------------------------------------------------------------- */
-typedef struct {
-    uint64_t timestamp_ms; /**< Unix-время в миллисекундах (UTC) */
-    uint32_t sequence_id;  /**< Монотонный порядковый номер */
-    double   acc_x;        /**< Ускорение X, м/с² */
-    double   acc_y;        /**< Ускорение Y, м/с² */
-    double   acc_z;        /**< Ускорение Z, м/с² */
+
+
+// data packet  synchronized with server types defines
+typedef struct
+{
+    uint64_t timestamp_ms; /**< Unix timestamp in msecs (UTC) */
+    uint32_t sequence_id;  /**< monotonic sequence id */
+    double   acc_x;        /**< accel X, m/s^2 */
+    double   acc_y;        /**< accel Y, m/s^2 */
+    double   acc_z;        /**< accel Z, m/s^2 */
 } SensorPacket;
 
-/* --------------------------------------------------------------------------- */
-/* Непрозрачный контекст датчика                                              */
-/* --------------------------------------------------------------------------- */
 typedef struct SensorCtx SensorCtx;
 
-/* --------------------------------------------------------------------------- */
-/* Параметры инициализации (mock-реализация использует только noise_amplitude) */
-/* --------------------------------------------------------------------------- */
-typedef struct {
-    double  noise_amplitude; /**< Амплитуда шума, м/с² (mock). Реальный: не используется */
-    double  gravity_z;       /**< Гравитационное ускорение по Z (mock), м/с². Обычно 9.81 */
-    const char* device_path; /**< Путь к устройству (реальный датчик). mock: игнорируется */
+// init parameters (fake sensor use noise_amplitude only)
+typedef struct
+{
+    double  noise_amplitude; // noise amplitude in m/s^2
+    double  gravity_z;       // gravity accel on Z, m/s^2. default 9.81
+    const char* device_path; // real devfile path (only for *nix) (not used)
 } SensorConfig;
 
-/* Дефолтная конфигурация — можно передать NULL в sensor_init() */
-extern const SensorConfig SENSOR_CONFIG_DEFAULT;
+/* default config — can pass NULL to sensor_init() */
+extern const
+SensorConfig SENSOR_CONFIG_DEFAULT;
 
-/* --------------------------------------------------------------------------- */
-/* API                                                                        */
-/* --------------------------------------------------------------------------- */
 
-/**
- * Инициализировать источник данных.
- * @param cfg  Конфигурация. NULL → использовать SENSOR_CONFIG_DEFAULT.
- * @return     Новый контекст или NULL при ошибке.
- */
-SensorCtx* sensor_init(const SensorConfig* cfg);
+//API
+SensorCtx*
+sensor_init(const SensorConfig* cfg);
 
-/**
- * Прочитать следующий пакет.
- * Функция автоматически заполняет timestamp_ms и sequence_id.
- * @param ctx  Контекст, полученный от sensor_init().
- * @param out  Указатель на структуру для записи данных.
- * @return     true — пакет готов; false — ошибка устройства.
- */
-bool sensor_read(SensorCtx* ctx, SensorPacket* out);
+bool
+sensor_read(SensorCtx* ctx, SensorPacket* out);
 
-/**
- * Освободить ресурсы контекста.
- * После вызова ctx использовать нельзя.
- */
-void sensor_destroy(SensorCtx* ctx);
-
-/**
- * Сериализовать пакет в JSON-строку, совместимую с data_subscriber.
- * Формат: {"ts":...,"seq":...,"ax":...,"ay":...,"az":...}
- * @param pkt      Пакет данных.
- * @param buf      Буфер для записи.
- * @param buf_size Размер буфера (рекомендуется ≥ 128).
- * @return         Количество записанных байт (без нуля) или -1.
- */
-int sensor_to_json(const SensorPacket* pkt, char* buf, size_t buf_size);
+void
+sensor_destroy(SensorCtx* ctx);
+ 
+// serialize packet to JSON string compatible to server
+// format:  {"ts":...,"seq":...,"ax":...,"ay":...,"az":...}
+int
+sensor_to_json(const SensorPacket* pkt, char* buf, size_t buf_size);
 
 #ifdef __cplusplus
 }

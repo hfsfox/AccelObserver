@@ -1,15 +1,11 @@
-/* =============================================================================
- * sensor/sensor_data.c
- * MOCK-реализация источника данных акселерометра.
- *
- * Генерирует синусоидальное движение + шум на осях X и Y,
- * гравитационное ускорение ~9.81 м/с² по оси Z.
- *
- * Чтобы подключить реальный датчик:
- *   1. Замените содержимое этого файла на драйвер устройства.
- *   2. SensorCtx может содержать файловый дескриптор, буфер DMA, и т.д.
- *   3. Интерфейс sensor_data.h остаётся неизменным.
- * ============================================================================= */
+ /*
+  * Fake sensor implementation for test purposes
+  * produce sinusoid moves + x and y axis noise
+  * g accel - ~9.81 m/s^2 on z axis
+  * sensorctx -- context for real sensor data, replace with DMA, buf or fd.
+  * header -- stable interface
+  */
+ 
 #include <sensor/sensor_data_sim.h>
 #include <network/net_platform.h>  /* net_time_ms() */
 
@@ -19,26 +15,21 @@
 #include <string.h>
 #include <time.h>
 
-/* --------------------------------------------------------------------------- */
-/* Внутренняя структура контекста (mock)                                       */
-/* --------------------------------------------------------------------------- */
 struct SensorCtx {
     SensorConfig config;
-    uint32_t     sequence;    /* Текущий порядковый номер */
-    double       phase;       /* Текущая фаза синуса для имитации движения */
-    uint32_t     rng_state;   /* Состояние PRNG (xorshift32) */
+    uint32_t     sequence;    /* current sequense */
+    double       phase;       /* current sin phase for movement imitation */
+    uint32_t     rng_state;   /* PRNG state (xorshift32) */
 };
 
-/* Дефолтная конфигурация */
+/* default config */
 const SensorConfig SENSOR_CONFIG_DEFAULT = {
     .noise_amplitude = 0.05,
     .gravity_z       = 9.81,
     .device_path     = NULL
 };
 
-/* --------------------------------------------------------------------------- */
-/* Xorshift32 PRNG — быстрый, достаточен для имитации шума                    */
-/* --------------------------------------------------------------------------- */
+// Xorshift32 PRNG — fast and enough for noise simulation
 static uint32_t prng_next(uint32_t* state) {
     uint32_t x = *state;
     x ^= x << 13u;
@@ -48,10 +39,10 @@ static uint32_t prng_next(uint32_t* state) {
     return x;
 }
 
-/* Значение в диапазоне [-1.0, 1.0] */
+/* value [-1.0, 1.0] */
 static double prng_f64(uint32_t* state) {
     uint32_t v = prng_next(state);
-    /* Нормализовать [0, UINT32_MAX] → [-1, 1] */
+    /* normalize [0, UINT32_MAX] → [-1, 1] */
     return ((double)(v >> 1u) / (double)(UINT32_MAX >> 1u)) - 1.0;
 }
 
@@ -65,7 +56,7 @@ SensorCtx* sensor_init(const SensorConfig* cfg) {
     ctx->sequence = 0;
     ctx->phase    = 0.0;
 
-    /* Инициализация PRNG временем + PID */
+    /* PRNG init with time + PID */
     uint32_t seed = (uint32_t)time(NULL);
 #ifdef _WIN32
     seed ^= (uint32_t)GetCurrentProcessId();
@@ -81,15 +72,15 @@ SensorCtx* sensor_init(const SensorConfig* cfg) {
 bool sensor_read(SensorCtx* ctx, SensorPacket* out) {
     if (!ctx || !out) return false;
 
-    /* Временная метка */
+    /* timestamp on client device */
     out->timestamp_ms = net_time_ms();
     out->sequence_id  = ctx->sequence++;
 
     /* Mock-данные:
-     *   X = 0.3 * sin(phase)       — имитация горизонтального движения
-     *   Y = 0.3 * cos(phase * 0.7) — с другой частотой
-     *   Z ≈ gravity_z              — гравитация
-     * К каждому добавляется равномерный шум ±noise_amplitude
+     *   X = 0.3 * sin(phase)       — horizontal move simulation
+     *   Y = 0.3 * cos(phase * 0.7) — with another f
+     *   Z approximately gravity_z
+     *  +/- noise_amplitude
      */
     double noise_x = prng_f64(&ctx->rng_state) * ctx->config.noise_amplitude;
     double noise_y = prng_f64(&ctx->rng_state) * ctx->config.noise_amplitude;
@@ -99,9 +90,9 @@ bool sensor_read(SensorCtx* ctx, SensorPacket* out) {
     out->acc_y = 0.3 * cos(ctx->phase * 0.7) + noise_y;
     out->acc_z = ctx->config.gravity_z + noise_z;
 
-    /* Инкремент фазы ~0.1 рад / такт при 10 Гц → ~0.57 об/с */
+    /* increment of phase ~0.1 rad / tick with 10 Гц = ~0.57 r/s */
     ctx->phase += 0.1;
-    if (ctx->phase > 6.283185307) ctx->phase -= 6.283185307; /* 2π */
+    if (ctx->phase > 6.283185307) ctx->phase -= 6.283185307; /* 2*pi */
 
     return true;
 }
