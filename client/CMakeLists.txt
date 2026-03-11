@@ -15,17 +15,15 @@ if(WIN32)
     )
 endif()
 
+if(HAIKU)
+    target_link_libraries(${CMAKE_PROJECT_NAME}_client PRIVATE be network bsd)
+endif()
+
 if(UNIX)
-    target_link_libraries(${CMAKE_PROJECT_NAME}_client PUBLIC
+    target_link_libraries(${CMAKE_PROJECT_NAME}_client PRIVATE
     )
-elseif(HAIKU)
-    target_link_libraries(${CMAKE_PROJECT_NAME}_client PUBLIC
-    be
-    bsd
-    network
-    )
-elseif(WINDOWS)
-    target_link_libraries(${CMAKE_PROJECT_NAME}_client PUBLIC
+elseif(WIN32)
+    target_link_libraries(${CMAKE_PROJECT_NAME}_client PRIVATE
     user32
     kernel32
     ws2_32
