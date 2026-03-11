@@ -16,7 +16,12 @@
 #include <misc/conf_print.h>
 #include <misc/conf_validator.h>
 #include <misc/conf_argparse.h>
+
 #include <transport/mqtt/mqtt_types.h>
+#include <transport/mqtt/mqtt_client.h>
+
+#include <transport/websocket/ws_types.h>
+#include <transport/websocket/ws_client.h>
 
 // global atomic values TODO: rewrite to platform atomic impl
 static volatile sig_atomic_t g_running = 1;
@@ -50,6 +55,7 @@ main(int argc, char* argv[])
     }
 
 
+	//MQTT Part
     mqtt_will_config_t will_cfg =
     {
         .topic   = cfg.will_topic,

@@ -7,6 +7,8 @@ add_executable( ${CMAKE_PROJECT_NAME}_client
     src/network/net_platform.c
     src/misc/conf_validator.c
     src/misc/help.c
+    src/transport/websocket/ws_client.c
+    src/transport/mqtt/mqtt_client.c
     )
 
 if(WIN32)
