@@ -7,6 +7,7 @@
 typedef struct
 {
     /* Connection */
+    const char* protocol;
     const char* host;
     uint16_t    port;
     const char* topic;

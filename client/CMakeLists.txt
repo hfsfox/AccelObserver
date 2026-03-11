@@ -5,6 +5,7 @@ include_directories(${CMAKE_PROJECT_NAME}_client PUBLIC
 add_executable( ${CMAKE_PROJECT_NAME}_client
     src/main.c
     src/network/net_platform.c
+    src/misc/help.c
     )
 
 if(WIN32)
