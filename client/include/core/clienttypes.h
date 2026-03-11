@@ -61,29 +61,29 @@ typedef struct
 
 typedef struct
 {
-    bool        enabled;         /* false → TLS не используется */
-    const char* cafile;          /* Путь к CA-сертификату (PEM). NULL = системный CA */
-    const char* capath;          /* Альтернативно: директория с CA-сертификатами */
-    const char* certfile;        /* Клиентский сертификат (mutual TLS). NULL = без mTLS */
-    const char* keyfile;         /* Приватный ключ клиента */
-    const char* ciphers;         /* OpenSSL cipher list. NULL = по умолчанию */
-    bool        insecure;        /* true → не проверять hostname (только для отладки!) */
+    bool        enabled;         /* false → TLS not used */
+    const char* cafile;          /* Path to CA-cert (PEM). NULL = system CA */
+    const char* capath;          /* Alt: dir with CA-certs */
+    const char* certfile;        /* client cert (mutual TLS). NULL = no mTLS */
+    const char* keyfile;         /* Private client key */
+    const char* ciphers;         /* OpenSSL cipher list. NULL = default */
+    bool        insecure;        /* true → do not check hostname (only for debug!) */
     int         tls_version;     /* 0 = auto, 1 = TLSv1, 2 = TLSv1.1, 3 = TLSv1.2 */
 } mqtt_tls_config_t;
 
 //mqtt connection configuration
 typedef struct
 {
-    /* Адрес и идентификация */
-    const char*    host;                /* Хост/IP брокера (обязательно) */
-    uint16_t       port;                /* Порт: 1883 (plain) / 8883 (TLS) */
-    const char*    client_id;           /* MQTT Client ID. NULL → автогенерация */
-    bool           clean_session;       /* true = не восстанавливать сессию */
-    int            keepalive_sec;       /* Интервал PINGREQ. 0 → 60 сек */
+    /* Address and identification */
+    const char*    host;                /* host/IP broker (required) */
+    uint16_t       port;                /* port: 1883 (plain) / 8883 (TLS) */
+    const char*    client_id;           /* MQTT Client ID. NULL if avto generated */
+    bool           clean_session;       /* true = do not restore session */
+    int            keepalive_sec;       /* PINGREQ. interval 0 - 60 s */
 
-    /* Аутентификация */
-    const char*    username;            /* NULL → без аутентификации */
-    const char*    password;            /* Может быть NULL даже с username */
+    /* Auth */
+    const char*    username;            /* NULL - no auth */
+    const char*    password;            /* may be NULL even with username */
 
     /* TLS */
     mqtt_tls_config_t  tls;
@@ -91,11 +91,12 @@ typedef struct
     /* Last Will */
     mqtt_will_config_t will;
 
-    /* Таймауты */
-    uint32_t       connect_timeout_ms;  /* Ожидание CONNACK. 0 → 10 000 мс */
-    uint32_t       reconnect_delay_min_sec;  /* Мин. пауза реконнекта. 0 → 1 */
-    uint32_t       reconnect_delay_max_sec;  /* Макс. пауза реконнекта. 0 → 30 */
-    bool           reconnect_exponential;    /* Экспоненциальный backoff */
+    /* timeouts*/
+    uint32_t       connect_timeout_ms;  	 /* CONNACK. wait 0 to 10 000 ms */
+    uint32_t       reconnect_delay_min_sec;  /* Min. reconnect pause. 0 to 1 */
+    uint32_t       reconnect_delay_max_sec;  /* Max. reconnect pause. 0 to 30 */
+    bool           reconnect_exponential;    /* exponential backoff */
 } mqtt_config_t;
+
 
 #endif

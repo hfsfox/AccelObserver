@@ -16,6 +16,7 @@
 #include <misc/conf_print.h>
 #include <misc/conf_validator.h>
 #include <misc/conf_argparse.h>
+#include <transport/mqtt/mqtt_types.h>
 
 // global atomic values TODO: rewrite to platform atomic impl
 static volatile sig_atomic_t g_running = 1;
@@ -89,7 +90,16 @@ main(int argc, char* argv[])
     print_config(&cfg);
     printf("\n[mqtt_client] Connecting...\n");
     
-    
+    mqtt_error_code_t err;
+    /*
+    mqtt_client_t* client = mqtt_connect(&mcfg, &err);
+    if (!client) {
+        fprintf(stderr, "[FATAL] mqtt_connect: %s\n", mqtt_error_str(err));
+        sensor_destroy(sensor);
+        mqtt_lib_cleanup();
+        net_cleanup();
+        return 1;
+    }*/
 
     return 0;
 }
