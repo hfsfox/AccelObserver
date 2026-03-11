@@ -17,6 +17,8 @@
 #include <misc/conf_validator.h>
 #include <misc/conf_argparse.h>
 
+#include <sensor/sensor_data_sim.h>
+
 #include <transport/mqtt/mqtt_types.h>
 #include <transport/mqtt/mqtt_client.h>
 
@@ -53,7 +55,17 @@ main(int argc, char* argv[])
         net_cleanup();
         return 1;
     }
+    
+    // libmosquitto init
+    mqtt_lib_init();
 
+    // data source init
+    SensorConfig scfg = {
+        .noise_amplitude = cfg.noise_amplitude,
+        .gravity_z       = cfg.gravity_z,
+        .device_path     = NULL
+    };
+    SensorCtx* sensor = sensor_init(&scfg);
 
 	//MQTT Part
     mqtt_will_config_t will_cfg =
@@ -96,8 +108,8 @@ main(int argc, char* argv[])
     print_config(&cfg);
     printf("\n[mqtt_client] Connecting...\n");
     
+    // connect to broker 
     mqtt_error_code_t err;
-    /*
     mqtt_client_t* client = mqtt_connect(&mcfg, &err);
     if (!client) {
         fprintf(stderr, "[FATAL] mqtt_connect: %s\n", mqtt_error_str(err));
@@ -105,7 +117,118 @@ main(int argc, char* argv[])
         mqtt_lib_cleanup();
         net_cleanup();
         return 1;
-    }*/
+    }
 
-    return 0;
+    long     total_expected = (long)(cfg.duration_sec * cfg.rate_hz);
+    double   interval_ms    = 1000.0 / cfg.rate_hz;
+    long     sent           = 0;
+    long     errors         = 0;
+    uint64_t start_ms       = net_time_ms();
+    char     json_buf[256];
+    
+    printf("[mqtt_client] Connected | %ld packets @ %.1f Hz for %.1f s\n\n",
+           total_expected, cfg.rate_hz, cfg.duration_sec);
+    
+    while (g_running) {
+        uint64_t elapsed_ms = net_time_ms() - start_ms;
+        if ((double)elapsed_ms >= cfg.duration_sec * 1000.0)
+            break;
+
+        /* connection check */
+        if (!mqtt_is_connected(client)) {
+            fprintf(stderr, "[WARN] Broker disconnected, waiting for reconnect...\n");
+            net_sleep_ms(500);
+            /* wait to reconnect max. 10 s */
+            uint64_t wait_start = net_time_ms();
+            while (!mqtt_is_connected(client) && g_running) {
+                if (net_time_ms() - wait_start > 10000) {
+                    fprintf(stderr, "[ERROR] Reconnect timeout, aborting\n");
+                    goto done;
+                }
+                net_sleep_ms(200);
+            }
+        }
+
+        /* read from sensor */
+        SensorPacket pkt;
+        if (!sensor_read(sensor, &pkt)) {
+            fprintf(stderr, "[WARN] sensor_read failed (seq=%ld)\n", sent);
+            ++errors;
+            net_sleep_ms((uint32_t)interval_ms);
+            continue;
+        }
+
+        /* serialization in JSON */
+        int jlen = sensor_to_json(&pkt, json_buf, sizeof(json_buf));
+        if (jlen <= 0) {
+            fprintf(stderr, "[WARN] sensor_to_json failed\n");
+            ++errors;
+            continue;
+        }
+
+        /* pub to MQTT broker */
+        mqtt_error_code_t pub_err = mqtt_publish(client,
+                                          cfg.topic,
+                                          json_buf,
+                                          (size_t)jlen,
+                                          cfg.qos,
+                                          (bool)cfg.retain);
+        if (pub_err != MQTT_OK) {
+            fprintf(stderr, "[ERROR] mqtt_publish: %s\n",
+                    mqtt_error_str(pub_err));
+            ++errors;
+            if (pub_err == MQTT_ERR_DISCONNECTED) {
+                /* do not interrupt — bg thread reconnected */
+                net_sleep_ms((uint32_t)interval_ms);
+                continue;
+            }
+            break;
+        }
+
+        ++sent;
+
+        if (cfg.verbose_level) {
+            printf("[mqtt_client] sent #%ld: %s\n", sent, json_buf);
+        } else if (sent % (long)(total_expected / 10 + 1) == 0) {
+            double pct = 100.0 * (double)(net_time_ms() - start_ms)
+                         / (cfg.duration_sec * 1000.0);
+            printf("[mqtt_client] %5.1f%% | seq=%-6ld | %s\n",
+                   pct, sent - 1, json_buf);
+        }
+
+        /* accurate pause next tick = start + sent * interval_ms */
+        uint64_t next_tick_ms = start_ms + (uint64_t)((double)sent * interval_ms);
+        uint64_t now_ms       = net_time_ms();
+        if (next_tick_ms > now_ms)
+            net_sleep_ms((uint32_t)(next_tick_ms - now_ms));
+    }
+
+done:;
+    double elapsed_total = (double)(net_time_ms() - start_ms) / 1000.0;
+    double actual_hz     = (elapsed_total > 0.0)
+                           ? (double)sent / elapsed_total : 0.0;
+
+    // stats
+    mqtt_stats_t stats;
+    mqtt_get_stats(client, &stats);
+
+    printf("\n[mqtt_client] Disconnecting...\n");
+    mqtt_disconnect(client);   /* DISCONNECT + wait to bg thread */
+
+    sensor_destroy(sensor);
+    mqtt_lib_cleanup();
+    net_cleanup();
+
+    printf("[mqtt_client] Done: %ld sent in %.2f s (%.1f Hz) | errors: %ld\n",
+           sent, elapsed_total, actual_hz, errors);
+    printf("  published  : %llu (mosquitto_publish calls)\n",
+           (unsigned long long)stats.published);
+    printf("  confirmed  : %llu (PUBACK/PUBREC received, QoS>=1)\n",
+           (unsigned long long)stats.confirmed);
+    printf("  reconnects : %llu\n",
+           (unsigned long long)stats.reconnects);
+
+    return (errors > 0) ? 2 : 0;
+
+    //return 0;
 }
