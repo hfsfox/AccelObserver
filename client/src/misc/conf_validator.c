@@ -5,7 +5,7 @@ int validate_config(const app_config_t* cfg)
 {
     int ok = 1;
 
-	if (!strcmp(cfg->protocol, "mqtt") == 0 || !strcmp(cfg->protocol, "ws") == 0)
+	if (!cfg->protocol == "mqtt" || !cfg->protocol == "ws")
 	{
 		fprintf(stderr, "[ERROR] --protocol must be mqtt or ws\n"); ok =0;
 	}
