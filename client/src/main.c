@@ -19,11 +19,15 @@
 
 #include <sensor/sensor_data_sim.h>
 
-#include <transport/mqtt/mqtt_types.h>
-#include <transport/mqtt/mqtt_client.h>
+#ifdef HAVE_MQTT
+    #include <transport/mqtt/mqtt_types.h>
+    #include <transport/mqtt/mqtt_client.h>
+#endif
 
-#include <transport/websocket/ws_types.h>
-#include <transport/websocket/ws_client.h>
+#ifdef HAVE_WEBSOCKET
+    #include <transport/websocket/ws_types.h>
+    #include <transport/websocket/ws_client.h>
+#endif
 
 // global atomic values TODO: rewrite to platform atomic impl
 static volatile sig_atomic_t g_running = 1;

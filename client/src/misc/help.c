@@ -18,6 +18,7 @@ print_usage(const char* prog)
         "  --pass <str>         Password\n"
         "  --keepalive <sec>    PINGREQ interval        (default: 60)\n"
         "  --no-clean           Disable clean session\n"
+        /*
         "\n"
         "TLS:\n"
         "  --tls                Enable TLS (default port becomes 8883)\n"
@@ -26,6 +27,7 @@ print_usage(const char* prog)
         "  --cert <path>        Client certificate (mutual TLS)\n"
         "  --key <path>         Client private key\n"
         "  --tls-insecure       Skip hostname verification (debug only)\n"
+        */
         "\n"
         "Last Will:\n"
         "  --will-topic <str>   LWT topic\n"

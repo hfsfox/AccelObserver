@@ -1,3 +1,19 @@
+set(TRANSPORT_SOURCES "")
+set(TRANSPORT_DEFINES "")
+set(TRANSPORT_INCLUDES "")
+set(TRANSPORT_LIBS "")
+
+if(ENABLE_WEBSOCKET)
+    list(APPEND TRANSPORT_SOURCES src/transport/websocket/ws_client.c)
+    list(APPEND TRANSPORT_DEFINES HAVE_WEBSOCKET)
+endif()
+if(ENABLE_MQTT)
+    list(APPEND TRANSPORT_SOURCES src/transport/mqtt/mqtt_client.c)
+    list(APPEND TRANSPORT_DEFINES HAVE_MQTT)
+#else()
+#    message(STATUS "no protocols enabled")
+endif()
+
 include_directories(${CMAKE_PROJECT_NAME}_client PUBLIC
     include
     ${MOSQUITTO_INCLUDE_DIR}
@@ -9,11 +25,11 @@ add_executable( ${CMAKE_PROJECT_NAME}_client
     src/misc/conf_validator.c
     src/misc/help.c
     src/sensor/sensor_data_sim.c
-    src/transport/websocket/ws_client.c
-    src/transport/mqtt/mqtt_client.c
+    ${TRANSPORT_SOURCES}
     )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}_client PRIVATE ${MOSQUITTO_LIBRARY})
+target_compile_definitions(${CMAKE_PROJECT_NAME}_client PRIVATE ${TRANSPORT_DEFINES})
 
 if(WIN32)
     target_link_libraries(${CMAKE_PROJECT_NAME}_client PRIVATE ws2_32)
