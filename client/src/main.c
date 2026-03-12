@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 
     #if defined HAVE_MQTT
     // libmosquitto init
-    if(cfg.protocol == "mqtt")
+    if(strcmp(cfg.protocol, "mqtt") == 0)
     {
     mqtt_lib_init();
 
@@ -82,6 +82,7 @@ int main(int argc, char* argv[])
         .retain  = (bool)cfg.will_retain
     };
 
+    /*
     mqtt_tls_config_t tls_cfg = {
         .enabled      = (bool)cfg.tls_enabled,
         .cafile       = cfg.tls_cafile,
@@ -90,8 +91,8 @@ int main(int argc, char* argv[])
         .keyfile      = cfg.tls_keyfile,
         .ciphers      = NULL,
         .insecure     = (bool)cfg.tls_insecure,
-        .tls_version  = 0   /* auto */
-    };
+        .tls_version  = 0   // auto
+    };*/
 
     mqtt_config_t mcfg = {
         .host                       = cfg.host,
@@ -101,7 +102,7 @@ int main(int argc, char* argv[])
         .keepalive_sec              = cfg.keepalive_sec,
         .username                   = cfg.username,
         .password                   = cfg.password,
-        .tls                        = tls_cfg,
+        .tls                        = NULL, //tls_cfg,
         .will                       = will_cfg,
         .connect_timeout_ms         = cfg.connect_timeout_ms,
         .reconnect_delay_min_sec    = 1,
@@ -228,7 +229,7 @@ int main(int argc, char* argv[])
     }
     #endif
     #if defined HAVE_WEBSOCKET
-    if(cfg.protocol == "ws")
+    if(strcmp(cfg.protocol, "ws") == 0)
     {
         ws_config_t wcfg = {
             .host                 = cfg.host,

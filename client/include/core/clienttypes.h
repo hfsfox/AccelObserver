@@ -22,12 +22,14 @@ typedef struct
     int         keepalive_sec;
     int         clean_session;   /* 1 = clean (default), 0 = persistent */
     /* TLS */
+    /* TODO: implement secure options
     int         tls_enabled;
     const char* tls_cafile;
     const char* tls_capath;
     const char* tls_certfile;
     const char* tls_keyfile;
     int         tls_insecure;
+    */
 
     /* Last Will */
     const char* will_topic;

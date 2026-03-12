@@ -27,12 +27,14 @@ parse_args(int argc, char* argv[])
         .keepalive_sec      = 60,
         .clean_session      = 1,
 
+        /* TODO: implement secure options
         .tls_enabled        = 0,
         .tls_cafile         = NULL,
         .tls_capath         = NULL,
         .tls_certfile       = NULL,
         .tls_keyfile        = NULL,
         .tls_insecure       = 0,
+        */
 
         .will_topic         = NULL,
         .will_payload       = NULL,
@@ -57,21 +59,6 @@ parse_args(int argc, char* argv[])
             print_usage(argv[0]); exit(0);
         }
         //connection parameters
-        else if(strcmp(argv[i], "--protocol") == 0 && i + 1 < argc)
-        {
-            //cfg.protocol = argv[++i];
-            //cfg.protocol = argv[++i];
-            //memcpy(cfg.protocol, argv[++i], sizeof(cfg.protocol));
-            strcpy(cfg.protocol,argv[++i]);
-            /*if(argv[++i] == "ws")
-            {
-                cfg.protocol = "ws";
-            }
-            if(argv[++i] == "mqtt")
-            {
-                cfg.protocol = "mqtt";
-            }*/
-        }
         else if(strcmp(argv[i], "--host") == 0 && i + 1 < argc)
         {
             cfg.host = argv[++i];
@@ -79,6 +66,10 @@ parse_args(int argc, char* argv[])
         else if (strcmp(argv[i], "--port") == 0 && i + 1 < argc)
         {
             cfg.port = (uint16_t)atoi(argv[++i]);
+        }
+        else if(strcmp(argv[i], "--protocol") == 0 && i + 1 < argc)
+        {
+            cfg.protocol = argv[++i];
         }
         else if (strcmp(argv[i], "--topic") == 0 && i + 1 < argc)
         {
@@ -108,6 +99,7 @@ parse_args(int argc, char* argv[])
         {
             cfg.clean_session = 0;
         }
+        /*
         // TLS configuration
         else if (strcmp(argv[i], "--tls") == 0)
         {
@@ -138,6 +130,7 @@ parse_args(int argc, char* argv[])
                 cfg.tls_insecure  = 1;
             }
         }
+        */
         // last will
         else if (strcmp(argv[i], "--will-topic") == 0 && i + 1 < argc)
         {

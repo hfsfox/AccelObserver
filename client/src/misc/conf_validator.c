@@ -32,12 +32,13 @@ int validate_config(const app_config_t* cfg)
     {
         fprintf(stderr, "[ERROR] --keepalive must be >= 0\n"); ok = 0;
     }
-    /* mTLS: cert и key идут парой */
+    /*
     if ((cfg->tls_certfile != NULL) != (cfg->tls_keyfile != NULL))
     {
         fprintf(stderr, "[ERROR] --cert and --key must be used together\n"); ok = 0;
     }
-    /* Предупреждение: --will-payload без --will-topic */
+    */
+    /* warn: --will-payload без --will-topic */
     if (cfg->will_payload && !cfg->will_topic)
     {
         fprintf(stderr, "[WARN] --will-payload has no effect without --will-topic\n");
