@@ -3,11 +3,12 @@
 
 #include <core/clienttypes.h>
 #include <stdio.h>
+#include <string.h>
 
 void
 print_config(const app_config_t* cfg)
 {
-    if(cfg->protocol == "mqtt"){
+    if(strcmp(cfg->protocol, "mqtt") == 0){
     printf("[mqtt_client] Configuration:\n");
     printf("  Broker    : %s://%s:%u\n",
            //cfg->tls_enabled ? "mqtts" : "mqtt",
