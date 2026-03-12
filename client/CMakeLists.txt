@@ -12,8 +12,6 @@ if(ENABLE_MQTT)
     list(APPEND TRANSPORT_SOURCES src/crypto/sha1.c)
     list(APPEND TRANSPORT_SOURCES src/crypto/base64.c)
     list(APPEND TRANSPORT_DEFINES HAVE_MQTT)
-#else()
-#    message(STATUS "no protocols enabled")
 endif()
 
 include_directories(${CMAKE_PROJECT_NAME}_client PUBLIC
@@ -47,6 +45,7 @@ endif()
 
 if(UNIX)
     target_link_libraries(${CMAKE_PROJECT_NAME}_client PRIVATE
+    m
     )
 elseif(WIN32)
     target_link_libraries(${CMAKE_PROJECT_NAME}_client PRIVATE
