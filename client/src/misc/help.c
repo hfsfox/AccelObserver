@@ -8,7 +8,7 @@ print_usage(const char* prog)
         "Usage: %s [OPTIONS]\n"
         "\n"
         "Connection:\n"
-        "  --protocol <str>     Protocol                (default: mqtt)\n"
+        "  --protocol mqtt|ws   Protocol                (default: mqtt)\n"
         "  --host <str>         Broker address          (default: localhost)\n"
         "  --port <uint16>      Broker port             (default: 1883)\n"
         "  --topic <str>        MQTT topic              (default: sensors/accel)\n"
