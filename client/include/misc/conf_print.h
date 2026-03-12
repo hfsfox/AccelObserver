@@ -7,6 +7,7 @@
 void
 print_config(const app_config_t* cfg)
 {
+    if(cfg->protocol == "mqtt"){
     printf("[mqtt_client] Configuration:\n");
     printf("  Broker    : %s://%s:%u\n",
            cfg->tls_enabled ? "mqtts" : "mqtt",
@@ -35,6 +36,13 @@ print_config(const app_config_t* cfg)
         printf("  Sensor    : noise=%.3f gravity=%.4f\n",
                cfg->noise_amplitude, cfg->gravity_z);
         printf("  Retain    : %s\n",  cfg->retain  ? "yes" : "no");
+    }
+    else if(cfg->protocol == "ws")
+    {
+        printf("[ws_client] Configuration:\n");
+        printf("  Connect   :\n",
+               cfg->host, (unsigned)cfg->port);
+    }
 }
 
 #endif

@@ -59,7 +59,18 @@ parse_args(int argc, char* argv[])
         //connection parameters
         else if(strcmp(argv[i], "--protocol") == 0 && i + 1 < argc)
         {
-            cfg.protocol = argv[++i];
+            //cfg.protocol = argv[++i];
+            //cfg.protocol = argv[++i];
+            //memcpy(cfg.protocol, argv[++i], sizeof(cfg.protocol));
+            strcpy(cfg.protocol,argv[++i]);
+            /*if(argv[++i] == "ws")
+            {
+                cfg.protocol = "ws";
+            }
+            if(argv[++i] == "mqtt")
+            {
+                cfg.protocol = "mqtt";
+            }*/
         }
         else if(strcmp(argv[i], "--host") == 0 && i + 1 < argc)
         {
