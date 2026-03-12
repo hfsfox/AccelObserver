@@ -60,8 +60,10 @@ main(int argc, char* argv[])
         return 1;
     }
     
+    #ifdef HAVE_MQTT
     // libmosquitto init
     mqtt_lib_init();
+    #endif //HAVE_MQTT
 
     // data source init
     SensorConfig scfg = {
@@ -71,6 +73,17 @@ main(int argc, char* argv[])
     };
     SensorCtx* sensor = sensor_init(&scfg);
 
+    #ifdef HAVE_WEBSOCKET
+    ws_config_t wcfg = {
+        .host                 = cfg.host,
+        .port                 = cfg.port,
+        .path                 = cfg.path,
+        .connect_timeout_ms   = 5000,
+        .handshake_timeout_ms = 5000
+    };
+    #endif
+
+    #ifdef HAVE_MQTT
 	//MQTT Part
     mqtt_will_config_t will_cfg =
     {
@@ -108,10 +121,27 @@ main(int argc, char* argv[])
         .reconnect_delay_max_sec    = 30,
         .reconnect_exponential      = true
     };
+    #endif //HAVE_MQTT
 
     print_config(&cfg);
-    printf("\n[mqtt_client] Connecting...\n");
+    printf("\n[client] Connecting...\n");
+
+    #ifdef HAVE_WEBSOCKET
+    ws_error_code_t ws_err;
+    /*
+    ws_client_t* ws = ws_connect(&wcfg, &err);
+    if (!ws)
+    {
+        fprintf(stderr, "[FATAL] ws_connect: %s | %s\n",
+                ws_error_str(ws_err), net_last_error());
+        sensor_destroy(sensor);
+        net_cleanup();
+        return 1;
+    }
+    */
+    #endif
     
+    #ifdef HAVE_MQTT
     // connect to broker 
     mqtt_error_code_t err;
     mqtt_client_t* client = mqtt_connect(&mcfg, &err);
@@ -122,6 +152,7 @@ main(int argc, char* argv[])
         net_cleanup();
         return 1;
     }
+    #endif //HAVE_MQTT
 
     long     total_expected = (long)(cfg.duration_sec * cfg.rate_hz);
     double   interval_ms    = 1000.0 / cfg.rate_hz;
@@ -213,6 +244,7 @@ done:;
                            ? (double)sent / elapsed_total : 0.0;
 
     // stats
+    #ifdef HAVE_MQTT
     mqtt_stats_t stats;
     mqtt_get_stats(client, &stats);
 
@@ -221,8 +253,10 @@ done:;
 
     sensor_destroy(sensor);
     mqtt_lib_cleanup();
+    #endif //HAVE_MQTT
     net_cleanup();
 
+    #ifdef HAVE_MQTT
     printf("[mqtt_client] Done: %ld sent in %.2f s (%.1f Hz) | errors: %ld\n",
            sent, elapsed_total, actual_hz, errors);
     printf("  published  : %llu (mosquitto_publish calls)\n",
@@ -231,6 +265,7 @@ done:;
            (unsigned long long)stats.confirmed);
     printf("  reconnects : %llu\n",
            (unsigned long long)stats.reconnects);
+    #endif //HAVE_MQTT
 
     return (errors > 0) ? 2 : 0;
 
