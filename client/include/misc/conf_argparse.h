@@ -77,6 +77,7 @@ parse_args(int argc, char* argv[])
         {
             cfg.protocol = argv[++i];
         }
+        #ifdef HAVE_WEBSOCKET
         else if (strcmp(argv[i], "--topic") == 0 && i + 1 < argc)
         {
             cfg.topic = argv[++i];
@@ -105,6 +106,7 @@ parse_args(int argc, char* argv[])
         {
             cfg.clean_session = 0;
         }
+        #endif
         /*
         // TLS configuration
         else if (strcmp(argv[i], "--tls") == 0)
@@ -138,6 +140,7 @@ parse_args(int argc, char* argv[])
         }
         */
         // last will
+        #ifdef HAVE_WEBSOCKET
         else if (strcmp(argv[i], "--will-topic") == 0 && i + 1 < argc)
         {
             cfg.will_topic   = argv[++i];
@@ -154,6 +157,7 @@ parse_args(int argc, char* argv[])
         {
             cfg.will_retain  = 1;
         }
+        #endif
         // timing
         else if (strcmp(argv[i], "--duration") == 0 && i + 1 < argc)
         {
