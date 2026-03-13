@@ -43,6 +43,7 @@ if(WIN32)
     target_link_libraries(${CMAKE_PROJECT_NAME}_client PRIVATE ws2_32)
     target_compile_definitions(${CMAKE_PROJECT_NAME}_client PRIVATE
         _WIN32_WINNT=0x0601
+        _CRT_SECURE_NO_WARNINGS
         WIN32_LEAN_AND_MEAN
     )
 endif()

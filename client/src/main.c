@@ -55,21 +55,22 @@ extract_config_path(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
-    const char* explicit_path = extract_config_path(argc, argv);
+    //const char* explicit_path = extract_config_path(argc, argv);
 
     app_config_t cfg = {0};
 
     // add parameters from conf file before parse_args cause user CLI input
     //has override priority
-    char found_path[512] = {};
+    const char* explicit_path = extract_config_path(argc, argv);
+    char found_path[512] = {0};
     bool found = conf_find_config("data_client", explicit_path, found_path, sizeof(found_path));
 
-    if (explicit_path && !found)
+    if (explicit_path == NULL && !found)
     {
         fprintf(stderr, "[FATAL] Config file not found: %s\n", explicit_path);
         return 1;
     }
-    if (found)
+    if (found && explicit_path != NULL)
     {
         fprintf(stdout, "[INFO] Config file loaded from: %s\n", explicit_path);
     }
