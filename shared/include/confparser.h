@@ -424,7 +424,7 @@ conf_load(const char* path, char* source_name)
 };
 
 // entry search
- static const conf_entry_t*
+const conf_entry_t*
 find_entry(const conf_result_t* conf, const char*   section, const char*   key)
 {
 	if (!conf || !key) return NULL;
