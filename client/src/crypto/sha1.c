@@ -7,18 +7,21 @@
 #include <stdlib.h>
 
 /* Circular left rotate 32-bit word */
-static inline uint32_t rotl32(uint32_t v, unsigned n) {
+static inline uint32_t rotl32(uint32_t v, unsigned n)
+{
     return (v << n) | (v >> (32u - n));
 }
 
 /* conv big-endian 4 bytes -> uint32 */
-static inline uint32_t load_be32(const uint8_t* p) {
+static inline uint32_t load_be32(const uint8_t* p)
+{
     return ((uint32_t)p[0] << 24u) | ((uint32_t)p[1] << 16u)
          | ((uint32_t)p[2] <<  8u) |  (uint32_t)p[3];
 }
 
 /* write uint32 in big-endian 4 bytes */
-static inline void store_be32(uint8_t* p, uint32_t v) {
+static inline void store_be32(uint8_t* p, uint32_t v)
+{
     p[0] = (uint8_t)(v >> 24u);
     p[1] = (uint8_t)(v >> 16u);
     p[2] = (uint8_t)(v >>  8u);
