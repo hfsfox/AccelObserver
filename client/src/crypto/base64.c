@@ -8,7 +8,7 @@ static const char B64_TABLE[] =
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
 
-inline size_t
+size_t
 base64_encode(const uint8_t* data, size_t len, char* out)
 {
     size_t out_pos = 0;

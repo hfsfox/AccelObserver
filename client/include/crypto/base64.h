@@ -17,7 +17,7 @@ extern "C" {
 size_t base64_encode(const uint8_t* data, size_t len, char* out);
 
 /* Необходимый размер буфера для кодирования len байт (без нуля). */
-inline size_t base64_encoded_size(size_t len)
+size_t base64_encoded_size(size_t len)
 {
     return ((len + 2u) / 3u) * 4u;
 }
