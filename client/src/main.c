@@ -55,12 +55,12 @@ extract_config_path(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
-    //const char* explicit_path = extract_config_path(argc, argv);
 
     app_config_t cfg = {0};
 
     // add parameters from conf file before parse_args cause user CLI input
     //has override priority
+    /*
     const char* explicit_path = extract_config_path(argc, argv);
     char found_path[512] = {0};
     bool found = conf_find_config("data_client", explicit_path, found_path, sizeof(found_path));
@@ -74,6 +74,7 @@ int main(int argc, char* argv[])
     {
         fprintf(stdout, "[INFO] Config file loaded from: %s\n", explicit_path);
     }
+    */
 
 
     // now parse CLI arguments from user input according to priority
