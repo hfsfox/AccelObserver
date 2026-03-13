@@ -45,6 +45,10 @@
 	#include <windows.h>
 	#include <shlobj.h>
 	#pragma comment(lib, "shell32.lib")
+	#ifdef _MSC_VER
+	#define strncasecmp _strnicmp
+	#define strcasecmp _stricmp
+	#endif
 #else
 	#include <unistd.h>
 	#include <sys/stat.h>
