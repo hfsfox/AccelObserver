@@ -27,7 +27,8 @@ struct ws_client_t
 
 // Xorshift32 PRNG for mask gen (RFC 6455 §5.3 must be random)
 
-uint32_t prng_next(uint32_t* state)
+static uint32_t
+prng_next(uint32_t* state)
 {
     uint32_t x = *state;
     x ^= x << 13u;
@@ -37,7 +38,7 @@ uint32_t prng_next(uint32_t* state)
     return x;
 }
 
-uint32_t
+static uint32_t
 prng_seed(void)
 {
     uint32_t s = (uint32_t)time(NULL);
@@ -92,7 +93,7 @@ extract_header_value(const char* line,
     return true;
 }
 
-ws_error_code_t
+static ws_error_code_t
 do_handshake(ws_client_t* ws,
                             const char* host,
                             uint16_t    port,
