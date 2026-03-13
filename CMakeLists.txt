@@ -41,9 +41,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 # =============================================================================
 # Build options
 # =============================================================================
-option(ENABLE_OUTPUT_CSV "Build with CSV output support"                   ON)
-option(ENABLE_MQTT       "Build with MQTT support (requires libmosquitto)" ON)
-option(ENABLE_WEBSOCKET  "Build with WebSocket server support"             ON)
+option(ENABLE_OUTPUT_CSV  "Build with CSV output support"                   ON)
+option(ENABLE_MQTT        "Build with MQTT support (requires libmosquitto)" ON)
+option(ENABLE_WEBSOCKET   "Build with WebSocket server support"             ON)
+option(ENABLE_CONF_PARSER "Build with config parser functional"             ON)
 
 # =============================================================================
 # Core sources
