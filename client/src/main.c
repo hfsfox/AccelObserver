@@ -102,7 +102,9 @@ int main(int argc, char* argv[])
     SensorCtx* sensor = sensor_init(&scfg);
     if (!sensor) {
         fprintf(stderr, "[FATAL] sensor_init failed\n");
-        mqtt_lib_cleanup();
+        #if defined HAVE_MQTT
+            mqtt_lib_cleanup();
+        #endif
         net_cleanup();
         return 1;
     }
