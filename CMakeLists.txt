@@ -10,7 +10,7 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-project("AccelObserver"
+project("gsensor"
         VERSION 0.0.1
         DESCRIPTION "AccelObserver: G-sensor observer daemon and logger"
         HOMEPAGE_URL "http://github.com/hfsfox/AccelObserver/"
@@ -270,6 +270,7 @@ message(STATUS "Build CXX flags:        ${CMAKE_CXX_FLAGS}")
 message(STATUS "Build type:             ${CMAKE_BUILD_TYPE}")
 message(STATUS "WebSocket:              ${ENABLE_WEBSOCKET}")
 message(STATUS "MQTT:                   ${ENABLE_MQTT}")
+message(STATUS "Config parser:          ${ENABLE_CONF_PARSER}")
 message(STATUS "==========================================")
 message(STATUS "")
 

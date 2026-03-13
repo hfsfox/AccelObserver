@@ -3,6 +3,9 @@ set(TRANSPORT_DEFINES "")
 set(TRANSPORT_INCLUDES "")
 set(TRANSPORT_LIBS "")
 
+set(CONFPARSER_INCLUDES "")
+set(CONFPARSER_DEFINES "")
+
 if(ENABLE_WEBSOCKET)
     list(APPEND TRANSPORT_SOURCES src/transport/websocket/ws_client.c)
     list(APPEND TRANSPORT_DEFINES HAVE_WEBSOCKET)
@@ -13,10 +16,15 @@ if(ENABLE_MQTT)
     list(APPEND TRANSPORT_SOURCES src/crypto/base64.c)
     list(APPEND TRANSPORT_DEFINES HAVE_MQTT)
 endif()
+if(ENABLE_CONF_PARSER)
+    list(APPEND CONFPARSER_INCLUDES ../shared/include/)
+    list(APPEND CONFPARSER_DEFINES ENABLE_CONFPARSER)
+endif()
 
 include_directories(${CMAKE_PROJECT_NAME}_client PUBLIC
     include
     ${MOSQUITTO_INCLUDE_DIR}
+    ${CONFPARSER_INCLUDES}
     )
 
 add_executable( ${CMAKE_PROJECT_NAME}_client
@@ -29,7 +37,7 @@ add_executable( ${CMAKE_PROJECT_NAME}_client
     )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}_client PRIVATE ${MOSQUITTO_LIBRARY})
-target_compile_definitions(${CMAKE_PROJECT_NAME}_client PRIVATE ${TRANSPORT_DEFINES})
+target_compile_definitions(${CMAKE_PROJECT_NAME}_client PRIVATE ${TRANSPORT_DEFINES} ${CONFPARSER_DEFINES})
 
 if(WIN32)
     target_link_libraries(${CMAKE_PROJECT_NAME}_client PRIVATE ws2_32)

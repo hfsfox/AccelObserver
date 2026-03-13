@@ -29,6 +29,10 @@
     #include <transport/websocket/ws_client.h>
 #endif
 
+#ifdef ENABLE_CONFPARSER
+#include <confparser.h>
+#endif
+
 // global atomic values TODO: rewrite to platform atomic impl
 static volatile sig_atomic_t g_running = 1;
 static void signal_handler(int sig)
@@ -37,9 +41,43 @@ static void signal_handler(int sig)
     g_running = 0;
 }
 
+static const char*
+extract_config_path(int argc, char* argv[])
+{
+    fprintf(stdout, "[INFO] finding config...\n");
+    for (int i = 1; i < argc - 1; ++i)
+        if (strcmp(argv[i], "--config") == 0)
+        {
+            return argv[i + 1];
+        }
+        return NULL;
+}
+
 int main(int argc, char* argv[])
 {
-    app_config_t cfg = parse_args(argc, argv);
+    const char* explicit_path = extract_config_path(argc, argv);
+
+    app_config_t cfg = {0};
+
+    // add parameters from conf file before parse_args cause user CLI input
+    //has override priority
+    char found_path[512] = {};
+    bool found = conf_find_config("data_client", explicit_path, found_path, sizeof(found_path));
+
+    if (explicit_path && !found)
+    {
+        fprintf(stderr, "[FATAL] Config file not found: %s\n", explicit_path);
+        return 1;
+    }
+    if (found)
+    {
+        fprintf(stdout, "[INFO] Config file loaded from: %s\n", explicit_path);
+    }
+
+
+    // now parse CLI arguments from user input according to priority
+
+    cfg = parse_args(argc, argv);
 
     if (!validate_config(&cfg))
         return 1;

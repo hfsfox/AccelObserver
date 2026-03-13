@@ -59,6 +59,12 @@ parse_args(int argc, char* argv[])
             print_usage(argv[0]); exit(0);
         }
         //connection parameters
+        /*
+        else if(strcmp(argv[i], "--config") == 0 && i + 1 < argc)
+        {
+
+        }
+        */
         else if(strcmp(argv[i], "--host") == 0 && i + 1 < argc)
         {
             cfg.host = argv[++i];

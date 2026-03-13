@@ -90,16 +90,50 @@ typedef struct conf_result_t conf_result_t;
 
 struct conf_result_t
 {
-	conf_entry_t* entries; // dynamic array of entries
-	int filled_count; // count of filled entries
-	int capacity; // allocated capacity
-	char last_error_msg[256]; // last error message for debug, empty if no errors
+	conf_entry_t* entries; 		// dynamic array of entries
+	int filled_count; 			// count of filled entries
+	int capacity; 				// allocated capacity
+	char last_error_msg[256]; 	// last error message for debug, empty if no errors
 	int error_line;
 };
 
+// char
+const char*
+conf_get_str(const conf_result_t* doc, const char* section, const char* key, const char* fallback);
+// int, can handle decimal and hex (0x) values
+int
+conf_get_int(const conf_result_t* doc, const char* section, const char* key, int fallback);
+// long
+long
+conf_get_long(const conf_result_t* doc, const char* section, const char* key, long fallback);
+//double / float
+double
+conf_get_double(const conf_result_t* doc, const char* section, const char* key, double fallback);
+// boolean values, case insensitive for yes/no or true/false
+bool
+conf_get_bool(const conf_result_t* doc, const char* section, const char* key, bool fallback);
+//uint16
+uint16_t
+conf_get_uint16(const conf_result_t* doc, const char* section, const char* key, uint16_t fallback);
+// uint32
+uint32_t
+conf_get_uint32(const conf_result_t* doc, const char*   section, const char* key, uint32_t fallback);
+// size
+size_t
+conf_get_size(const conf_result_t* conf, const char* section, const char* key, size_t fallback);
+// return entry from index [0, conf_count()] or NULL if out of range
+const conf_entry_t*
+conf_get_entry(const conf_result_t* conf, int index);
+// dump all entries to filestream
+void
+conf_dump(const conf_result_t* conf, FILE* fp);
+// find config file according to filepath priority
+bool
+conf_find_config(const char* app_name, const char* explicit_path, char* out_path, size_t out_size);
+
 // private functional
 //trim spaces around
-inline static char*
+ static char*
 str_trim(char* s)
 {
 	if (!s) return s;
@@ -114,14 +148,14 @@ str_trim(char* s)
 }
 
 // make string in lowercase
-inline static void
+ static void
 str_tolower(char* s)
 {
 	for (; *s; ++s) *s = (char)tolower((unsigned char)*s);
 }
 
 // remove braces
-inline static char*
+ static char*
 str_unquote(char* s)
 {
 	size_t len = strlen(s);
@@ -134,7 +168,7 @@ str_unquote(char* s)
 }
 
 // check file existence
-inline static bool
+ static bool
 file_exists(const char* path)
 {
 	#ifdef _WIN32
@@ -145,7 +179,7 @@ file_exists(const char* path)
 }
 
 // create of struct
-inline static
+ static
 conf_result_t*
 conf_alloc(void)
 {
@@ -161,11 +195,11 @@ conf_alloc(void)
 	return conf;
 }
 
-inline static bool
+ static bool
 conf_push(conf_result_t* conf, const char* section,
-					 const char* key, const char* value, int lineno)
+					 const char* key, const char* value, int line_n)
 {
-	if (conf->count >= conf->capacity)
+	if (conf->filled_count >= conf->capacity)
 	{
 		// delete buf if overflown
 		if (conf->capacity >= CONF_MAX_ENTRIES) return false;
@@ -178,7 +212,7 @@ conf_push(conf_result_t* conf, const char* section,
 		conf->capacity = newcap;
 	}
 
-	conf_entry_t* e = &conf->entries[conf->count++];
+	conf_entry_t* e = &conf->entries[conf->filled_count++];
 	strncpy(e->section, section, CONF_MAX_SECTION - 1);
 	e->section[CONF_MAX_SECTION - 1] = '\0';
 
@@ -189,11 +223,11 @@ conf_push(conf_result_t* conf, const char* section,
 	strncpy(e->value, value, CONF_MAX_VALUE - 1);
 	e->value[CONF_MAX_VALUE - 1] = '\0';
 
-	e->lineno = lineno;
+	e->line_n = line_n;
 	return true;
 }
 
-inline void
+ void
 conf_free(conf_result_t* conf)
 {
 	if (!conf) return;
@@ -205,16 +239,18 @@ conf_free(conf_result_t* conf)
 // public functional
 
 
-Iniconf* CONF_load_fp(FILE* fp, const char* source_name) {
-	Iniconf* conf = conf_alloc();
+conf_result_t* conf_load_fp(FILE* fp, const char* source_name)
+{
+	conf_result_t* conf = conf_alloc();
 	if (!conf) return NULL;
 
 	char    cur_section[CONF_MAX_SECTION] = "";
 	char    line[CONF_MAX_LINE];
-	int     lineno = 0;
+	int     line_n = 0;
 
-	while (fgets(line, sizeof(line), fp)) {
-		++lineno;
+	while (fgets(line, sizeof(line), fp))
+	{
+		++line_n;
 
 		char* nl = strpbrk(line, "\r\n");
 		if (nl) *nl = '\0';
@@ -225,13 +261,15 @@ Iniconf* CONF_load_fp(FILE* fp, const char* source_name) {
 
 		if (*p == '#' || *p == ';') continue;
 
-		if (*p == '[') {
+		if (*p == '[')
+		{
 			char* end = strchr(p, ']');
-			if (!end) {
-				snprintf(conf->error_msg, sizeof(conf->error_msg),
+			if (!end)
+			{
+				snprintf(conf->last_error_msg, sizeof(conf->last_error_msg),
 						 "%s:%d: unclosed '[' in section header",
-			 source_name ? source_name : "?", lineno);
-				conf->error_line = lineno;
+			 source_name ? source_name : "?", line_n);
+				conf->error_line = line_n;
 				continue;
 			}
 			*end = '\0';
@@ -244,11 +282,12 @@ Iniconf* CONF_load_fp(FILE* fp, const char* source_name) {
 		char* eq = strchr(p, '=');
 		if (!eq)
 		{
-			if (conf->error_line == 0) {
-				snprintf(conf->error_msg, sizeof(conf->error_msg),
+			if (conf->error_line == 0)
+			{
+				snprintf(conf->last_error_msg, sizeof(conf->last_error_msg),
 						 "%s:%d: line has no '=', ignored",
-			 source_name ? source_name : "?", lineno);
-				conf->error_line = lineno;
+			 source_name ? source_name : "?", line_n);
+				conf->error_line = line_n;
 			}
 			continue;
 		}
@@ -273,8 +312,9 @@ Iniconf* CONF_load_fp(FILE* fp, const char* source_name) {
 
 		if (key_raw[0] == '\0') continue;
 
-			if (!conf_push(conf, cur_section, key_raw, val_raw, lineno)) {
-				snprintf(conf->error_msg, sizeof(conf->error_msg),
+			if (!conf_push(conf, cur_section, key_raw, val_raw, line_n))
+			{
+				snprintf(conf->last_error_msg, sizeof(conf->last_error_msg),
 						 "%s: reached maximum entry limit (%d)",
 						 source_name ? source_name : "?", CONF_MAX_ENTRIES);
 				break;
@@ -285,18 +325,21 @@ Iniconf* CONF_load_fp(FILE* fp, const char* source_name) {
 }
 
 // load conf-style config from path
-inline conf_result_t*
-conf_load(const char* path, char* err_out)
+ conf_result_t*
+conf_load(const char* path, char* source_name)
 {
-	conf_result_t* conf_r = conf_alloc();
+	conf_result_t* conf = conf_alloc();
 	if (!conf) return NULL; // check if created
 	char    cur_section[CONF_MAX_SECTION] = "";
 	char    line[CONF_MAX_LINE];
-	int     lineno = 0;
+	int     line_n = 0;
+
+	FILE* fp;
+	fp = fopen(path, "r");
 
 	while (fgets(line, sizeof(line), fp))
 	{
-		++lineno;
+		++line_n;
 
 		// remove newline
 		char* nl = strpbrk(line, "\r\n");
@@ -316,10 +359,10 @@ conf_load(const char* path, char* err_out)
 			char* end = strchr(p, ']');
 			if (!end)
 			{
-				snprintf(conf->error_msg, sizeof(conf->error_msg),
+				snprintf(conf->last_error_msg, sizeof(conf->last_error_msg),
 						 "%s:%d: unclosed '[' in section header",
-			 source_name ? source_name : "?", lineno);
-				conf->error_line = lineno;
+			 source_name ? source_name : "?", line_n);
+				conf->error_line = line_n;
 				continue;
 			}
 			*end = '\0';
@@ -336,10 +379,10 @@ conf_load(const char* path, char* err_out)
 			/* string without '=' - warn and ignored */
 			if (conf->error_line == 0)
 			{
-				snprintf(conf->error_msg, sizeof(conf->error_msg),
+				snprintf(conf->last_error_msg, sizeof(conf->last_error_msg),
 						 "%s:%d: line has no '=', ignored",
-			 source_name ? source_name : "?", lineno);
-				conf->error_line = lineno;
+			 source_name ? source_name : "?", line_n);
+				conf->error_line = line_n;
 			}
 			continue;
 		}
@@ -368,9 +411,9 @@ conf_load(const char* path, char* err_out)
 
 		if (key_raw[0] == '\0') continue; // skip empty keys
 
-			if (!conf_push(conf, cur_section, key_raw, val_raw, lineno))
+			if (!conf_push(conf, cur_section, key_raw, val_raw, line_n))
 			{
-				snprintf(conf->error_msg, sizeof(conf->error_msg),
+				snprintf(conf->last_error_msg, sizeof(conf->last_error_msg),
 						 "%s: reached maximum entry limit (%d)",
 						 source_name ? source_name : "?", CONF_MAX_ENTRIES);
 				break;
@@ -381,7 +424,7 @@ conf_load(const char* path, char* err_out)
 };
 
 // entry search
-inline static const conf_entry_t*
+ static const conf_entry_t*
 find_entry(const conf_result_t* conf, const char*   section, const char*   key)
 {
 	if (!conf || !key) return NULL;
@@ -393,7 +436,7 @@ find_entry(const conf_result_t* conf, const char*   section, const char*   key)
 	key_lc[CONF_MAX_KEY - 1] = '\0';
 	str_tolower(key_lc);
 
-	for (int i = 0; i < conf->count; ++i)
+	for (int i = 0; i < conf->filled_count; ++i)
 	{
 		const conf_entry_t* e = &conf->entries[i];
 		if (strcasecmp(e->section, sec) == 0 &&
@@ -413,12 +456,12 @@ bool conf_has_key(const conf_result_t* conf, const char* section, const char* ke
 
 int conf_count(const conf_result_t* conf)
 {
-	return conf ? conf->count : 0;
+	return conf ? conf->filled_count : 0;
 }
 
 const char* conf_error(const conf_result_t* conf)
 {
-	return conf ? conf->error_msg : "";
+	return conf ? conf->last_error_msg : "";
 }
 
 const char* conf_get_str(const conf_result_t* conf,
@@ -525,15 +568,15 @@ size_t conf_get_size(const conf_result_t* conf,
 
 /* --------------------------------------------------------------------------- */
 const conf_entry_t* conf_get_entry(const conf_result_t* conf, int index) {
-	if (!conf || index < 0 || index >= conf->count) return NULL;
+	if (!conf || index < 0 || index >= conf->filled_count) return NULL;
 	return &conf->entries[index];
 }
 
 void conf_dump(const conf_result_t* conf, FILE* fp) {
 	if (!conf || !fp) return;
-	fprintf(fp, "# conf_result_t dump: %d entries\n", conf->count);
+	fprintf(fp, "# conf_result_t dump: %d entries\n", conf->filled_count);
 	const char* prev_sec = NULL;
-	for (int i = 0; i < conf->count; ++i) {
+	for (int i = 0; i < conf->filled_count; ++i) {
 		const conf_entry_t* e = &conf->entries[i];
 		if (prev_sec == NULL || strcmp(prev_sec, e->section) != 0) {
 			fprintf(fp, "\n[%s]\n", e->section[0] ? e->section : "(global)");

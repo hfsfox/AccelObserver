@@ -48,6 +48,7 @@ print_usage(const char* prog)
         "  --retain             Set retain flag on every data packet\n"
         "  --verbose            Print each packet\n"
         "  --help               Show this message\n"
+        "  --config             Client configuration file (server/desktop only)\n"
         "\n"
         "Examples:\n"
         "  %s\n"
