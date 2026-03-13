@@ -44,6 +44,7 @@ print_config(const app_config_t* cfg)
         printf("  Retain    : %s\n",  cfg->retain  ? "yes" : "no");
     }
     #endif
+
     #ifdef HAVE_WEBSOCKET
     if(cfg->protocol == "ws")
     {

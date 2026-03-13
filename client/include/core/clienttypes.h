@@ -10,10 +10,12 @@ typedef struct
     const char* protocol;
     const char* host;
     uint16_t    port;
+
     #ifdef HAVE_WEBSOCKET
     const char* path;
     #endif
-    #ifdef HAVE_MQTT
+
+    //#ifdef HAVE_MQTT
     const char* topic;
     int         qos;
     const char* client_id;
@@ -36,7 +38,7 @@ typedef struct
     const char* will_payload;
     int         will_qos;
     int         will_retain;
-    #endif // HAVE_MQTT
+    //#endif // HAVE_MQTT
 
     /* Timing */
     double      duration_sec;
