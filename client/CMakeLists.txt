@@ -65,3 +65,5 @@ elseif(WIN32)
     ws2_32
     )
 endif()
+
+install(TARGETS ${CMAKE_PROJECT_NAME}_client RUNTIME DESTINATION bin)

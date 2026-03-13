@@ -46,55 +46,6 @@ option(ENABLE_MQTT        "Build with MQTT support (requires libmosquitto)" ON)
 option(ENABLE_WEBSOCKET   "Build with WebSocket server support"             ON)
 option(ENABLE_CONF_PARSER "Build with config parser functional"             ON)
 
-# =============================================================================
-# Core sources
-# =============================================================================
-set(CORE_SOURCES
-    #src/core/packet_validator.cpp
-    #src/core/storage_manager.cpp
-    #src/format/csv_formatter.cpp
-    #src/platform/net_platform.cpp
-    server/core/source/statuscode.cpp
-    server/core/source/network/networkstack.cpp
-    )
-
-set(CORE_INCLUDES
-    server/core/include
-    )
-
-# =============================================================================
-# Storage manger sources
-# =============================================================================
-set(STORAGE_MANGER_SOURCES
-    server/storage/source/storagemanager.cpp
-    )
-set(STORAGE_MANGER_INCLUDES
-    server/storage/include
-    )
-
-# =============================================================================
-# Structure/Class Template Library sources
-# =============================================================================
-set(SCTL_INCLUDES
-    server/sctl/include
-    )
-
-# =============================================================================
-# Output format sources
-# =============================================================================
-set(FORMAT_SOURCES "")
-set(FORMAT_DEFINES "")
-set(FORMAT_INCLUDES "")
-set(FORMAT_LIBS "")
-
-set(FORMAT_INCLUDES
-    server/format/include
-    )
-
-#set(FORMAT_SOURCES
-#    server/format/source/impl/csvformatter.cpp
-#    )
-
 if(ENABLE_OUTPUT_CSV)
     list(APPEND FORMAT_SOURCES server/format/source/impl/csvformatter.cpp)
     list(APPEND FORMAT_DEFINES HAVE_OUTPUT_CSV)
@@ -161,80 +112,9 @@ else()
     message(STATUS "MQTT support: OFF (disabled by option)")
 endif()
 
-# =============================================================================
-# Server executable
-# =============================================================================
-#add_executable(${CMAKE_PROJECT_NAME}_server
-#    server/main.cpp
-#    ${CORE_SOURCES}
-#    ${FORMAT_SOURCES}
-#    ${TRANSPORT_SOURCES}
-#    ${STORAGE_MANGER_SOURCES}
-#)
-
-#target_include_directories(${CMAKE_PROJECT_NAME}_server PUBLIC
-#    ${CORE_INCLUDES}
-#    ${SCTL_INCLUDES}
-#    ${FORMAT_INCLUDES}
-#    ${TRANSPORT_INCLUDES}
-#    ${STORAGE_MANGER_INCLUDES}
-#)
-
-#target_include_directories(${CMAKE_PROJECT_NAME}_server
-#    PRIVATE
-#        ${TRANSPORT_INCLUDES}
-#)
-
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND NOT MINGW AND NOT MSVC)
     add_compile_options(-pthread)
 endif()
-
-#target_compile_definitions(${CMAKE_PROJECT_NAME}_server
-#    PRIVATE
-#        ${TRANSPORT_DEFINES}
-#)
-
-# =============================================================================
-# Link platform libraries
-# =============================================================================
-#if(WIN32)
-    # Winsock2 — ws2_32 and mswsock
-#    target_link_libraries(${CMAKE_PROJECT_NAME}_server PRIVATE ws2_32 mswsock)
-#endif()
-
-#if(TRANSPORT_LIBS)
-#    target_link_libraries(${CMAKE_PROJECT_NAME}_server PRIVATE ${TRANSPORT_LIBS})
-#endif()
-
-# pthreads on UNIX (std::thread requirement)
-#if(UNIX)
-#    find_package(Threads REQUIRED)
-#    target_link_libraries(${CMAKE_PROJECT_NAME}_server PRIVATE Threads::Threads)
-#endif()
-
-# =============================================================================
-# Compiler warnings
-# =============================================================================
-# if(MSVC)
-#     target_compile_options(${CMAKE_PROJECT_NAME}_server PRIVATE
-#         /W4          # 4th warning level
-#         /wd4100      # inhibit: unreferenced formal parameter
-#         /wd4996      # inhibit: deprecated POSIX names
-#     )
-#     add_compile_definitions(${CMAKE_PROJECT_NAME}_server PRIVATE
-#     UNICODE=1
-#     _UNICODE=1
-#     NOMINMAX=1
-#     )
-# else()
-#     # GCC / Clang
-#     target_compile_options(${CMAKE_PROJECT_NAME}_server PRIVATE
-#         -Wall
-#         -Wextra
-#         -Wpedantic
-#         -Wno-unused-parameter
-#     )
-# endif()
 
 # Enable all warnings also in Debug mode
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -244,13 +124,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(/W4)
     endif()
 endif()
-
-#
-#
-#
-
-#get_target_property(OUT_LINK_LIBS ${CMAKE_PROJECT_NAME}_server LINK_LIBRARIES)
-#get_target_property(OUT_BUILD_FLAGS ${CMAKE_PROJECT_NAME}_server COMPILE_FLAGS)
 
 # ==============================================================================
 # Build config output
@@ -265,8 +138,6 @@ ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "Target arch:            ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "Build C flags:          ${CMAKE_C_FLAGS}")
 message(STATUS "Build CXX flags:        ${CMAKE_CXX_FLAGS}")
-#message(STATUS "Build flags:            ${OUT_BUILD_FLAGS}")
-#message(STATUS "Link libraries:         ${OUT_LINK_LIBS}")
 message(STATUS "Build type:             ${CMAKE_BUILD_TYPE}")
 message(STATUS "WebSocket:              ${ENABLE_WEBSOCKET}")
 message(STATUS "MQTT:                   ${ENABLE_MQTT}")
