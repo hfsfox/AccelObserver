@@ -6,21 +6,25 @@
 #include <string.h>
 #include <stdlib.h>
 
+uint32_t rotl32(uint32_t v, unsigned n);
+uint32_t load_be32(const uint8_t* p);
+void store_be32(uint8_t* p, uint32_t v);
+
 /* Circular left rotate 32-bit word */
-static inline uint32_t rotl32(uint32_t v, unsigned n)
+uint32_t rotl32(uint32_t v, unsigned n)
 {
     return (v << n) | (v >> (32u - n));
 }
 
 /* conv big-endian 4 bytes -> uint32 */
-static inline uint32_t load_be32(const uint8_t* p)
+uint32_t load_be32(const uint8_t* p)
 {
     return ((uint32_t)p[0] << 24u) | ((uint32_t)p[1] << 16u)
          | ((uint32_t)p[2] <<  8u) |  (uint32_t)p[3];
 }
 
 /* write uint32 in big-endian 4 bytes */
-static inline void store_be32(uint8_t* p, uint32_t v)
+void store_be32(uint8_t* p, uint32_t v)
 {
     p[0] = (uint8_t)(v >> 24u);
     p[1] = (uint8_t)(v >> 16u);
@@ -29,7 +33,8 @@ static inline void store_be32(uint8_t* p, uint32_t v)
 }
 
 /* --------------------------------------------------------------------------- */
-void sha1_compute(const uint8_t* data, size_t len, uint8_t out[20])
+void
+sha1_compute(const uint8_t* data, size_t len, uint8_t out[20])
 {
     uint32_t h[5] =
     {

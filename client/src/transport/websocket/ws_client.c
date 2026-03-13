@@ -93,7 +93,7 @@ extract_header_value(const char* line,
     return true;
 }
 
-static ws_error_code_t
+ws_error_code_t
 do_handshake(ws_client_t* ws,
                             const char* host,
                             uint16_t    port,

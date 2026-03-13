@@ -25,3 +25,8 @@ base64_encode(const uint8_t* data, size_t len, char* out)
     out[out_pos] = '\0';
     return out_pos;
 }
+
+size_t base64_encoded_size(size_t len)
+{
+    return ((len + 2u) / 3u) * 4u;
+}
