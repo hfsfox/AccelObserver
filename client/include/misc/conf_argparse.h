@@ -16,7 +16,7 @@ parse_args(int argc, char* argv[])
 	// default configuration fill
     app_config_t cfg =
     {
-    	.protocol           = "mqtt",
+    	.protocol           = "ws",
         .host               = "localhost",
         .port               = 1883,
         .topic              = "sensors/accel",

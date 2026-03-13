@@ -8,7 +8,7 @@ print_usage(const char* prog)
         "Usage: %s [OPTIONS]\n"
         "\n"
         "Connection:\n"
-        "  --protocol mqtt|ws   Protocol                (default: mqtt)\n"
+        "  --protocol mqtt|ws   Protocol                (default: ws)\n"
         "  --host <str>         Broker address          (default: localhost)\n"
         "  --port <uint16>      Broker port             (default: 1883)\n"
         "  --topic <str>        MQTT topic              (default: sensors/accel)\n"
@@ -52,8 +52,9 @@ print_usage(const char* prog)
         "\n"
         "Examples:\n"
         "  %s\n"
-        "  %s --host broker.local --port 1883 --topic factory/sensors --qos 1\n"
-        "  %s --host broker.local --user alice --pass secret --duration 60\n"
+        "  %s --protocl ws --port 8080\n"
+        "  %s --protocol mqtt --host broker.local --port 1883 --topic factory/sensors\n"
+        "  %s --host broker.local --user alice --pass secret --duration 60 --qos 1\n"
         "  %s --tls --cafile /path/to/ssl/ca.pem --cert client.crt --key client.key\n",
         prog, prog, prog, prog, prog
     );
