@@ -31,7 +31,7 @@ include_directories(${CMAKE_PROJECT_NAME}_server PUBLIC
 
 add_executable( ${CMAKE_PROJECT_NAME}_server
     src/main.cpp
-    #src/misc/help.сpp
+    src/misc/help.сc
     #src/network/net_platform.c
     #src/misc/conf_validator.c
     #src/misc/help.c
