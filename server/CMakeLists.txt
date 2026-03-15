@@ -70,8 +70,16 @@ if(HAIKU)
 endif()
 
 if(UNIX)
+    find_package(Threads REQUIRED)
     target_link_libraries(${CMAKE_PROJECT_NAME}_server PRIVATE
-    m
+    Threads::Threads
+    )
+    find_library( mathlib m)
+    if(mathlib)
+        target_link_libraries(data_subscriber PRIVATE
+        ${mathlib}
+        )
+    endif()
     )
 elseif(WIN32)
     target_link_libraries(${CMAKE_PROJECT_NAME}_server PRIVATE
@@ -82,3 +90,7 @@ elseif(WIN32)
 endif()
 
 install(TARGETS ${CMAKE_PROJECT_NAME}_server RUNTIME DESTINATION bin)
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}../etc/gaccelserver/gaccelserver.conf")
+    install(FILES gaccelserver.conf DESTINATION bin OPTIONAL)
+endif()
