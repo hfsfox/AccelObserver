@@ -26,8 +26,6 @@ extern "C"
 #include <conf/confloader.hpp>
 #endif
 
-#include <sensor/sensor_device.h>
-
 #include <conf/cliargsparser.hpp>
 
 #ifdef HAVE_WEBSOCKET
@@ -71,9 +69,10 @@ parse_log_level(const std::string& s)
 static const char*
 extract_config_path(int argc, char* argv[])
 {
-    for (int i = 1; i < argc - 1; ++i)
+    for (int i = 1; i < argc - 1; ++i) {
         if (std::strcmp(argv[i], "--config") == 0) return argv[i + 1];
-        return nullptr;
+    }
+    return nullptr;
 }
 
 #endif /* HAVE_CONFPARSER */
@@ -96,10 +95,9 @@ int main(int argc, char* argv[])
         }
         if (found) {
             std::cout << "[config] Loading: " << found_path << "\n";
-            char err_buf[256] = {};
-            conf_result_t* conf = conf_load(found_path, err_buf);
+            conf_result_t* conf = conf_load(found_path, nullptr);
             if (!conf) {
-                std::cerr << "[ERROR] Cannot read config: " << err_buf << "\n";
+                std::cerr << "[ERROR] conf_load: out of memory\n";
                 return 1;
             }
             if (conf_error(conf)[0] != '\0')
@@ -247,7 +245,7 @@ int main(int argc, char* argv[])
         #endif
     }
 
-    /* Packet callback — runs in the transport receive thread */
+    /* Packet callback -- runs in the transport receive thread */
     uint64_t last_stats_ms = now_ms();
 
     sub->set_callback([&](const std::string& payload) {
@@ -291,7 +289,7 @@ int main(int argc, char* argv[])
             LOG_INFOF("[Stats] %s",  server::StatsAnalyzer::format(snap).c_str());
 
         if (!storage.push(pkt))
-            LOG_WARN("[Server] Ring buffer full — packet dropped");
+            LOG_WARN("[Server] Ring buffer full -- packet dropped");
     });
 
     /* Connect or bind */

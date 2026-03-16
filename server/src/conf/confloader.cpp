@@ -2,6 +2,7 @@
 
 #ifdef HAVE_CONFPARSER
 
+#include <cstdio>
 
 void
 apply_conf(const conf_result_t* conf, server::Config& cfg)
@@ -78,8 +79,8 @@ apply_conf(const conf_result_t* conf, server::Config& cfg)
         cfg.device_range_g = (float)conf_get_double(conf, "device", "range_g",
                                                    (double)cfg.device_range_g);
 
-        /* [validator] */
-        const char* ts_str = conf_get_str(conf, "validator", "timesource", nullptr);
+    /* [validator] */
+    const char* ts_str = conf_get_str(conf, "validator", "timesource", nullptr);
     if (ts_str && ts_str[0]) cfg.timesource = ts_str;
     if (conf_has_key(conf, "validator", "max_acc_ms2"))
         cfg.max_acc_ms2 = conf_get_double(conf, "validator", "max_acc_ms2", cfg.max_acc_ms2);
