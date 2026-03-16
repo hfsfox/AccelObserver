@@ -93,4 +93,4 @@ private:
 };
 
 } /* namespace web */
-} /* namespace subscriber */
+} /* namespace server */

@@ -414,4 +414,4 @@ size_t WebInterface::client_count() const {
 }
 
 } /* namespace web */
-} /* namespace subscriber */
+} /* namespace server */

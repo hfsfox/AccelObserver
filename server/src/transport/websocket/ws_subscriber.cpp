@@ -446,4 +446,4 @@ std::string WsSubscriber::base64_encode(const uint8_t* data, std::size_t len) {
     return base64_encode_impl(data, len);
 }
 
-} // namespace subscriber
+} // namespace server

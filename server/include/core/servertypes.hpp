@@ -126,6 +126,6 @@ namespace server
         bool          seq_optional    = false;
     };
 
-} /* namespace subscriber */
+} /* namespace server */
 
 #endif /*__SERVERTYPES_H__*/

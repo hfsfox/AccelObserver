@@ -59,4 +59,4 @@ private:
     std::atomic<bool> running_;
 };
 
-} // namespace subscriber
+} // namespace server

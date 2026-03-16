@@ -1,6 +1,6 @@
 #include <conf/confloader.hpp>
 
-#ifdef HAVE_CONFLOADER
+#ifdef HAVE_CONFPARSER
 
 
 void

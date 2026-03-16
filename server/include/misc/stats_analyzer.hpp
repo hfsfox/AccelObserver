@@ -81,4 +81,4 @@ private:
     double   current_rate_hz_      = 0.0;
 };
 
-} /* namespace subscriber */
+} /* namespace server */

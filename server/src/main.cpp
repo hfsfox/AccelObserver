@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
     {
         const char* explicit_path = extract_config_path(argc, argv);
         char found_path[512] = {};
-        bool found = conf_find_config("gaccelserveer", explicit_path,
+        bool found = conf_find_config("gaccelserver", explicit_path,
                                      found_path, sizeof(found_path));
         if (explicit_path && !found) {
             std::cerr << "[ERROR] Config file not found: " << explicit_path << "\n";
@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
     std::unique_ptr<server::web::WebInterface> webif;
     if (cfg.web_enabled)
     {
-        webui.reset(new server::web::WebInterface());
+        webif.reset(new server::web::WebInterface());
         if (!webif->start(cfg.web_host, cfg.web_port))
         {
             LOG_WARN("[Server] Web interface failed to start");
@@ -270,14 +270,14 @@ int main(int argc, char* argv[])
          server::StatsSnapshot snap = stats.snapshot();
 
         #ifdef HAVE_WEBUI
-        if (webui) {
+        if (webif) {
             double lat = static_cast<double>(recv_ms)
             - static_cast<double>(pkt.timestamp_ms);
-            webui->broadcast_data(pkt, lat, snap.avg_jitter_ms);
+            webif->broadcast_data(pkt, lat, snap.avg_jitter_ms);
 
             uint64_t now = recv_ms;
             if (now - last_stats_ms >= cfg.web_stats_interval_ms) {
-                webui->broadcast_stats(snap);
+                webif->broadcast_stats(snap);
                 last_stats_ms = now;
             }
         }
@@ -308,8 +308,8 @@ int main(int argc, char* argv[])
               cfg.flush_interval_ms);
 
     #ifdef HAVE_WEBUI
-    if (webui) {
-        webui->set_device_info(cfg.device_model, cfg.device_range_g);
+    if (webif) {
+        webif->set_device_info(cfg.device_model, cfg.device_range_g);
         LOG_INFOF("[Server] Web interface: http://%s:%u",
                   cfg.web_host.c_str(), cfg.web_port);
     }
@@ -337,7 +337,7 @@ int main(int argc, char* argv[])
     if (sub_thread.joinable()) sub_thread.join();
 
     #ifdef HAVE_WEBUI
-    if (webui) webui->stop();
+    if (webif) webif->stop();
     #endif
 
     storage.stop();
