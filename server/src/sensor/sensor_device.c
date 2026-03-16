@@ -154,7 +154,7 @@ void sensor_device_init(DeviceDescriptor* dev, double bandwidth_hz) {
 }
 
 
-bool sensor_device_load_conf(DeviceDescriptor* dev, const conf_result_t* conf) {
+bool sensor_device_load_ini(DeviceDescriptor* dev, const conf_result_t* conf) {
     if (!conf) return false;
     bool loaded = false;
 

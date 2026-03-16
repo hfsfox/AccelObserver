@@ -33,7 +33,15 @@ apply_conf(const conf_result_t* conf, server::Config& cfg)
         cfg.mqtt_username = conf_get_str(conf, "mqtt", "username", "");
     if (conf_has_key(conf, "mqtt", "password"))
         cfg.mqtt_password = conf_get_str(conf, "mqtt", "password", "");
-    cfg.mqtt_qos       = conf_get_int(conf, "mqtt", "qos",       cfg.mqtt_qos);
+    {
+        int qos = conf_get_int(conf, "mqtt", "qos", cfg.mqtt_qos);
+        // FIX: validate QoS range (MQTT spec: 0, 1 or 2 only)
+        if (qos < 0 || qos > 2) {
+            std::fprintf(stderr, "[config] Warning: mqtt.qos=%d out of range (0-2), using 0\n", qos);
+            qos = 0;
+        }
+        cfg.mqtt_qos = qos;
+    }
     cfg.mqtt_keepalive = conf_get_int(conf, "mqtt", "keepalive", cfg.mqtt_keepalive);
 
     /* [storage] */

@@ -34,13 +34,15 @@ public:
                              const std::string& topic,
                              int qos = 0);
 
-    // Расширенный конструктор — с аутентификацией и Will
+    // Расширенный конструктор — с аутентификацией, Will и keepalive
+    // FIX: keepalive added so cfg.mqtt_keepalive is actually applied
     MqttSubscriber(const std::string& client_id,
                    const std::string& topic,
                    int qos,
                    const std::string& username,
                    const std::string& password,
-                   const MqttWill& will = MqttWill{});
+                   const MqttWill& will     = MqttWill{},
+                   int               keepalive = 60);
 
     ~MqttSubscriber() override;
 

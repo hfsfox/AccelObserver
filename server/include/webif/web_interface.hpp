@@ -22,6 +22,7 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include <atomic>
 #include <cstdint>
 #include <misc/stats_analyzer.hpp>
@@ -86,6 +87,11 @@ private:
 
     mutable std::mutex clients_mutex_;
     std::vector<int>   client_fds_;
+
+    // FIX 2: condition_variable used by stop() to wait for detached client
+    // threads to finish instead of the original 500 ms spin-wait.
+    std::mutex              clients_done_mutex_;
+    std::condition_variable clients_done_cv_;
 
     mutable std::mutex device_mutex_;
     std::string        device_model_;

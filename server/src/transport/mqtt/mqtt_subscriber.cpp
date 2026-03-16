@@ -21,13 +21,15 @@ MqttSubscriber::MqttSubscriber(const std::string& client_id,
                                 int qos,
                                 const std::string& username,
                                 const std::string& password,
-                                const MqttWill& will)
+                                const MqttWill& will,
+                                int keepalive)
     : client_id_(client_id)
     , topic_(topic)
     , qos_(qos)
     , username_(username)
     , password_(password)
     , will_(will)
+    , keepalive_(keepalive)   // FIX: apply keepalive from caller (was hardcoded 60)
 {
     init_mosquitto();
 }
@@ -142,8 +144,13 @@ void MqttSubscriber::run() {
 }
 
 void MqttSubscriber::stop() {
-    if (!running_.exchange(false)) return;
+    // FIX 11: If stop() is called after connect() but before run() starts,
+    // running_ is still false so exchange(false) returns false and skips
+    // mosquitto_disconnect() — leaving the TCP connection open until the
+    // destructor calls mosquitto_destroy(). Always disconnect if mosq_ exists.
+    bool was_running = running_.exchange(false);
     if (mosq_) mosquitto_disconnect(mosq_);
+    (void)was_running;
 }
 
 
@@ -154,8 +161,21 @@ void MqttSubscriber::on_connect(struct mosquitto* mosq,
 {
     auto* self = static_cast<MqttSubscriber*>(ud);
     if (rc != MOSQ_ERR_SUCCESS) {
-        LOG_ERRF("[MQTT] Connection refused (rc=%d): %s",
-                 rc, mosquitto_strerror(rc));
+        // FIX 9: The 'rc' here is a MQTT CONNACK return code (RFC 3.2.2.3),
+        // NOT a MOSQ_ERR_* value. mosquitto_strerror() only understands
+        // MOSQ_ERR_* codes; calling it with a CONNACK code produces a
+        // misleading or empty string. Use a dedicated CONNACK string table.
+        static const char* connack_str[] = {
+            "accepted",                        // 0
+            "bad protocol version",            // 1
+            "client id rejected",              // 2
+            "server unavailable",              // 3
+            "bad credentials",                 // 4
+            "not authorized",                  // 5
+        };
+        const char* reason = (rc >= 1 && rc <= 5) ? connack_str[rc]
+                                                   : "unknown";
+        LOG_ERRF("[MQTT] Connection refused (connack=%d): %s", rc, reason);
         return;
     }
     self->connected_ = true;
@@ -202,9 +222,15 @@ void MqttSubscriber::on_subscribe(struct mosquitto*, void* ud,
                                    const int* granted_qos)
 {
     auto* self = static_cast<MqttSubscriber*>(ud);
-    if (qos_count > 0 && granted_qos[0] == 128) {
-        LOG_ERRF("[MQTT] Subscription to '%s' refused by broker",
-                 self->topic_.c_str());
+    // FIX 10: iterate all granted QoS entries; 0x80 = subscription refused.
+    for (int i = 0; i < qos_count; ++i) {
+        if (granted_qos[i] == 0x80) {
+            LOG_ERRF("[MQTT] Subscription [%d] to '%s' refused by broker",
+                     i, self->topic_.c_str());
+        } else {
+            LOG_INFOF("[MQTT] Subscription [%d] to '%s' granted QoS=%d",
+                      i, self->topic_.c_str(), granted_qos[i]);
+        }
     }
 }
 

@@ -18,7 +18,7 @@
  *   When android_host/port are set, sensor_device_read() connects to
  *   the "Sensor Server" Android app (github.com/umer0586/SensorServer)
  *   which streams sensor data over WebSocket in JSON format:
- *     {"x":0.12,"y":-9.81,"z":0.03,"timestamp":123456789}
+ *     {"type":"android.sensor.accelerometer","values":[0.12,-9.81,0.03]}  /* FIX: actual format from packet_validator.cpp */
  *   The client relays these values instead of generating mock data.
  *
  * Recommended Android app for sensor simulation:
@@ -32,7 +32,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <confparser.h>
+#ifdef HAVE_CONFPARSER
+#  include <confparser.h>  /* FIX: was included unconditionally — breaks builds without confparser */
+#endif
 
 #ifdef __cplusplus
 extern "C" {

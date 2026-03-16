@@ -68,7 +68,7 @@ extern "C" {
  * sensor_device_load_ini() must include config_parser.h beforehand to have a
  * complete type; passing an opaque pointer through the rest of the code is safe.
  * ============================================================================ */
-//typedef struct IniDoc conf_result_t;
+typedef struct IniDoc conf_result_t;  /* FIX: was commented out — type was undefined */
 
 /* ============================================================================
  * SENSOR_DEVICE_API -- linkage qualifier for function definitions.
@@ -377,7 +377,7 @@ SENSOR_DEVICE_API bool sensor_device_load_ini(DeviceDescriptor* dev,
      * The cast to const IniDoc* is a no-op because they are the same type.
      * config_parser.h must be included by the caller before this header in
      * the translation unit that actually calls this function. */
-    //const IniDoc* doc = (const IniDoc*)ini;
+    const IniDoc* doc = (const IniDoc*)ini;  /* FIX: was commented out — doc was undefined */
     if (!doc) return false;
     bool loaded = false;
 

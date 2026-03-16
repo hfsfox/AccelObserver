@@ -18,7 +18,7 @@
 #include <transport/isubscriber.hpp>
 #include <misc/help.hpp>
 
-#ifdef ENABLE_CONFPARSER
+#ifdef HAVE_CONFPARSER
 extern "C"
 {
     #include <confparser.h>
@@ -237,7 +237,8 @@ int main(int argc, char* argv[])
         will.qos     = cfg.mqtt_qos;
         sub.reset(new  server::MqttSubscriber(
             cfg.mqtt_client_id, cfg.mqtt_topic, cfg.mqtt_qos,
-            cfg.mqtt_username, cfg.mqtt_password, will));
+            cfg.mqtt_username, cfg.mqtt_password, will,
+            cfg.mqtt_keepalive));  // FIX: pass keepalive from Config
         #else
         LOG_ERR("[Server] MQTT not compiled; use -DHAVE_MQTT=ON");
         storage.stop();

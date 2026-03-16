@@ -14,10 +14,12 @@ parse_args(int argc, char* argv[], server::Config cfg)
         };
 
         if      (a == "--help" || a == "-h")    { print_usage(argv[0]); std::exit(0); }
-        #ifdef HAVE_CONFPARSER
-        else if (a == "--config")               { next(); /* consumed earlier */ }
-        else if (a == "--dump-config")          { /* handled after parse_args */ }
-        #endif
+        // FIX: --config and --dump-config must be silently consumed regardless
+        // of whether HAVE_CONFPARSER is defined. Without this, passing --config
+        // when the feature is disabled (or when HAVE_CONFPARSER != ENABLE_CONFPARSER)
+        // prints a false "[WARN] Unknown argument: --config".
+        else if (a == "--config")               { next(); /* path consumed by extract_config_path() */ }
+        else if (a == "--dump-config")          { /* handled after parse_args in main() */ }
         // protocol selection
         else if (a == "--ws")                   cfg.transport = server::TransportType::WebSocket;
         else if (a == "--mqtt")                 cfg.transport = server::TransportType::MQTT;
@@ -35,7 +37,16 @@ parse_args(int argc, char* argv[], server::Config cfg)
         else if (a == "--mqtt-id")              cfg.mqtt_client_id    = next();
         else if (a == "--mqtt-user")            cfg.mqtt_username     = next();
         else if (a == "--mqtt-pass")            cfg.mqtt_password     = next();
-        else if (a == "--mqtt-qos")             cfg.mqtt_qos          = std::atoi(next().c_str());
+        else if (a == "--mqtt-qos") {
+            // FIX: validate QoS range (MQTT spec: 0, 1 or 2 only)
+            int qos = std::atoi(next().c_str());
+            if (qos < 0 || qos > 2) {
+                std::cerr << "[WARN] Invalid --mqtt-qos " << qos
+                          << "; must be 0, 1 or 2. Using 0.\n";
+                qos = 0;
+            }
+            cfg.mqtt_qos = qos;
+        }
         // storage
         else if (a == "--output")               cfg.output_file       = next();
         else if (a == "--storepath")            cfg.store_path        = next();

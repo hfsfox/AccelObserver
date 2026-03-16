@@ -231,7 +231,9 @@ conf_push(conf_result_t* conf, const char* section,
 	return true;
 }
 
- void
+ /* FIX 8: static inline prevents ODR violation when header is included in
+  * multiple translation units. */
+static void
 conf_free(conf_result_t* conf)
 {
 	if (!conf) return;
@@ -329,7 +331,7 @@ conf_result_t* conf_load_fp(FILE* fp, const char* source_name)
 }
 
 // load conf-style config from path
- conf_result_t*
+conf_result_t*
 conf_load(const char* path, char* source_name)
 {
 	conf_result_t* conf = conf_alloc();
@@ -340,6 +342,13 @@ conf_load(const char* path, char* source_name)
 
 	FILE* fp;
 	fp = fopen(path, "r");
+	/* FIX 6: missing NULL check — fopen() can return NULL if file does not
+	 * exist or permissions deny access. Calling fgets() on NULL is UB. */
+	if (!fp) {
+		snprintf(conf->last_error_msg, sizeof(conf->last_error_msg),
+				 "conf_load: cannot open '%s'", path ? path : "(null)");
+		return conf;
+	}
 
 	while (fgets(line, sizeof(line), fp))
 	{
@@ -570,7 +579,7 @@ size_t conf_get_size(const conf_result_t* conf,
 }
 
 
-/* --------------------------------------------------------------------------- */
+
 const conf_entry_t* conf_get_entry(const conf_result_t* conf, int index) {
 	if (!conf || index < 0 || index >= conf->filled_count) return NULL;
 	return &conf->entries[index];
@@ -590,9 +599,7 @@ void conf_dump(const conf_result_t* conf, FILE* fp) {
 	}
 }
 
-/* --------------------------------------------------------------------------- */
-/* Поиск файла конфигурации по стандартным путям                             */
-/* --------------------------------------------------------------------------- */
+
 bool conf_find_config(const char* app_name,
 					 const char* explicit_path,
 					 char*       out_path,
