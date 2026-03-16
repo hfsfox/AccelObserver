@@ -13,6 +13,8 @@
 #include <network/net_platform.hpp>
 #include <storage/storage_manager.hpp>
 #include <format/csv/csv_formatter.hpp>
+#include <misc/packet_validator.hpp>
+#include <misc/stats_analyzer.hpp>
 #include <misc/help.hpp>
 
 #ifdef ENABLE_CONFPARSER
@@ -34,7 +36,7 @@ extern "C"
 #endif
 
 #ifdef HAVE_WEBUI
-    //#include <web/web_interface.hpp>
+    #include <webif/web_interface.hpp>
 #endif
 
 // atomic running state for begin and end main event loop
@@ -162,5 +164,54 @@ int main(int argc, char* argv[])
         }
     }
 
+    /* Build ValidatorConfig from the resolved server Config. */
+    server::ValidatorConfig vcfg;
+    vcfg.timesource  = server::PacketValidator::parse_timesource(cfg.timesource.c_str());
+    vcfg.seq_optional = cfg.seq_optional;
+    // If max_acc_ms2 is not set explicitly, derive from device_range_g.
+    vcfg.max_acc_ms2 = (cfg.max_acc_ms2 > 0.0)
+    ? cfg.max_acc_ms2 : static_cast<double>(cfg.device_range_g) * 9.80665;
+
+    LOG_INFOF("[Validator] timesource=%s  max_acc=%.4f m/s^2  seq_optional=%s",
+              server::PacketValidator::timesource_str(vcfg.timesource),
+              vcfg.max_acc_ms2,
+              cfg.seq_optional ? "yes" : "no");
+
+    server::PacketValidator validator(vcfg);
+
+    /* Stats analyzer */
+    server::StatsAnalyzer stats(200, cfg.web_stats_interval_ms);
+
+    /* Web interface */
+    #ifdef HAVE_WEBUI
+    std::unique_ptr<server::web::WebInterface> webif;
+    if (cfg.web_enabled)
+    {
+        webui.reset(new server::web::WebInterface());
+        if (!webif->start(cfg.web_host, cfg.web_port))
+        {
+            LOG_WARN("[Server] Web interface failed to start");
+            webif.reset();
+        }
+    }
+    #endif
+
+    /* Resolve output path:
+     * If output_file is set it is used as-is (exact path or directory prefix).
+     * If store_path is set, append trailing separator so StorageManager
+     * treats it as a directory and generates a filename inside it.
+     * If neither is set, auto-generate in the working directory. */
+    std::string out_path = cfg.output_file;
+    if (out_path.empty() && !cfg.store_path.empty()) {
+        out_path = cfg.store_path;
+        char last = out_path.back();
+        if (last != '/' && last != '\\') out_path += '/';
+    }
+
+    auto formatter = std::unique_ptr< server::IFormatter>(
+        new  server::CsvFormatter());
+     server::StorageManager storage(std::move(formatter), out_path,
+                                       cfg.buffer_capacity, cfg.flush_interval_ms);
+    storage.start();
 
 }

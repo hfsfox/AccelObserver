@@ -38,10 +38,11 @@ add_executable( ${CMAKE_PROJECT_NAME}_server
     src/network/net_platform.cpp
     src/storage/storage_manager.cpp
     src/format/csv/csv_formatter.cpp
-    #src/network/net_platform.c
-    #src/misc/conf_validator.c
-    #src/misc/help.c
-    #src/sensor/sensor_data_sim.c
+    src/misc/packet_validator.cpp
+    src/misc/stats_analyzer.cpp
+    src/webif/web_interface.cpp
+    src/crypto/base64.c
+    src/crypto/sha1.c
     ${TRANSPORT_SOURCES}
     )
 
