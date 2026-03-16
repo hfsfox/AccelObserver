@@ -31,7 +31,7 @@ include_directories(${CMAKE_PROJECT_NAME}_server PUBLIC
 
 add_executable( ${CMAKE_PROJECT_NAME}_server
     src/main.cpp
-    src/misc/help.сc
+    src/misc/help.cpp
     #src/network/net_platform.c
     #src/misc/conf_validator.c
     #src/misc/help.c
@@ -39,6 +39,21 @@ add_executable( ${CMAKE_PROJECT_NAME}_server
     ${TRANSPORT_SOURCES}
     )
 
+
+if(MSVC)
+    target_compile_options(${CMAKE_PROJECT_NAME}_server PRIVATE
+    /W4
+    /wd4100
+    /wd4996
+    )
+else()
+    target_compile_options(${CMAKE_PROJECT_NAME}_server PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Wno-unused-parameter
+        )
+endif()
 
 target_link_libraries(${CMAKE_PROJECT_NAME}_server PRIVATE
     ${MOSQUITTO_LIBRARY}
@@ -80,7 +95,6 @@ if(UNIX)
         ${mathlib}
         )
     endif()
-    )
 elseif(WIN32)
     target_link_libraries(${CMAKE_PROJECT_NAME}_server PRIVATE
     user32

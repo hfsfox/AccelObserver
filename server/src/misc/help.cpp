@@ -1,4 +1,4 @@
-#include <misc/help.h>
+#include <misc/help.hpp>
 #include <iostream>
 
 void print_usage(const char* prog)
