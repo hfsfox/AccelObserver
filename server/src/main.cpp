@@ -26,6 +26,8 @@ extern "C"
 #include <conf/confloader.hpp>
 #endif
 
+#include <sensor/sensor_device.h>
+
 #include <conf/cliargsparser.hpp>
 
 #ifdef HAVE_WEBSOCKET
@@ -95,7 +97,7 @@ int main(int argc, char* argv[])
         if (found) {
             std::cout << "[config] Loading: " << found_path << "\n";
             char err_buf[256] = {};
-            IniDoc* conf = conf_load(found_path, err_buf);
+            conf_result_t* conf = conf_load(found_path, err_buf);
             if (!conf) {
                 std::cerr << "[ERROR] Cannot read config: " << err_buf << "\n";
                 return 1;

@@ -56,7 +56,7 @@ add_executable( ${CMAKE_PROJECT_NAME}_server
     src/misc/stats_analyzer.cpp
     src/transport/websocket/ws_subscriber.cpp
     src/transport/mqtt/mqtt_subscriber.cpp
-    src/sensor/sensor_device.c
+    #src/sensor/sensor_device.c
     ${TRANSPORT_SOURCES}
     )
 

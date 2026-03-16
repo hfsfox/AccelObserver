@@ -10,7 +10,6 @@
 #endif
 
 #include "sensor_device.h"
-#include <confparser.h>
 
 #include <math.h>
 #include <string.h>

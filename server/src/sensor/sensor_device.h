@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <confparser.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -118,8 +119,8 @@ void sensor_device_init(DeviceDescriptor* dev, double bandwidth_hz);
  * Requires config_parser.h to be included by the caller.
  * Returns true if at least one field was loaded.
  */
-struct IniDoc;
-bool sensor_device_load_ini(DeviceDescriptor* dev, const struct IniDoc* ini);
+struct conf_result_t;
+bool sensor_device_load_ini(DeviceDescriptor* dev, const struct conf_result_t* ini);
 
 /* --------------------------------------------------------------------------- */
 /* Sampling */
