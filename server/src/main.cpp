@@ -8,6 +8,8 @@
 #include <string>
 #include <cstring>
 
+#include <core/servertypes.hpp>
+#include <logger/logger.hpp>
 #include <misc/help.hpp>
 
 #ifdef ENABLE_CONFPARSER
