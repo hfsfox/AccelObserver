@@ -36,6 +36,8 @@ add_executable( ${CMAKE_PROJECT_NAME}_server
     src/conf/confloader.cpp
     src/conf/cliargsparser.cpp
     src/network/net_platform.cpp
+    src/storage/storage_manager.cpp
+    src/format/csv/csv_formatter.cpp
     #src/network/net_platform.c
     #src/misc/conf_validator.c
     #src/misc/help.c

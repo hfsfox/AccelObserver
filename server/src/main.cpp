@@ -11,6 +11,8 @@
 #include <core/servertypes.hpp>
 #include <logger/logger.hpp>
 #include <network/net_platform.hpp>
+#include <storage/storage_manager.hpp>
+#include <format/csv/csv_formatter.hpp>
 #include <misc/help.hpp>
 
 #ifdef ENABLE_CONFPARSER
@@ -136,5 +138,29 @@ int main(int argc, char* argv[])
                  server::platform::last_socket_error().c_str());
         return 1;
     }
+
+    /* Auto-size buffer_capacity based on rate and flush interval.
+     * Required minimum: rate_hz * flush_interval_ms / 1000.
+     * We use a 2x safety factor to absorb bursts and writer latency jitter. */
+
+    if (cfg.auto_buffer)
+    {
+        // We do not have an explicit rate_hz in Config (that belongs to the client).
+        // Use a conservative default assumption of 200 Hz.
+        // If the user sets --buf explicitly (auto_buffer=false), skip this.
+        const double assumed_rate_hz = 200.0;
+        std::size_t min_buf = static_cast<std::size_t>(
+            assumed_rate_hz * static_cast<double>(cfg.flush_interval_ms) / 1000.0 * 2.0);
+        if (min_buf < 64) min_buf = 64;
+        if (cfg.buffer_capacity < min_buf)
+        {
+            LOG_INFOF("[Storage] auto_buffer: capacity %zu -> %zu "
+            "(2 x %.0fHz x %zums flush)",
+                      cfg.buffer_capacity, min_buf,
+                      assumed_rate_hz, cfg.flush_interval_ms);
+            cfg.buffer_capacity = min_buf;
+        }
+    }
+
 
 }
