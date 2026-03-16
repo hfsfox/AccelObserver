@@ -15,6 +15,7 @@
 #include <format/csv/csv_formatter.hpp>
 #include <misc/packet_validator.hpp>
 #include <misc/stats_analyzer.hpp>
+#include <transport/isubscriber.hpp>
 #include <misc/help.hpp>
 
 #ifdef ENABLE_CONFPARSER
@@ -28,11 +29,11 @@ extern "C"
 #include <conf/cliargsparser.hpp>
 
 #ifdef HAVE_WEBSOCKET
-    //#include <transport/websocket/ws_subscriber.hpp>
+    #include <transport/websocket/ws_subscriber.hpp>
 #endif
 
 #ifdef HAVE_MQTT
-    //#include <transport/mqtt/mqtt_subscriber.hpp>
+    #include <transport/mqtt/mqtt_subscriber.hpp>
 #endif
 
 #ifdef HAVE_WEBUI
@@ -213,5 +214,140 @@ int main(int argc, char* argv[])
      server::StorageManager storage(std::move(formatter), out_path,
                                        cfg.buffer_capacity, cfg.flush_interval_ms);
     storage.start();
+
+    /* Transport */
+    std::unique_ptr< server::ISubscriber> sub;
+
+    if (cfg.transport ==  server::TransportType::WebSocket) {
+        #ifdef HAVE_WEBSOCKET
+        sub.reset(new  server::WsSubscriber());
+        #else
+        LOG_ERR("[Server] WebSocket not compiled; use -DHAVE_WEBSOCKET=ON");
+        storage.stop();
+         server::platform::net_cleanup();
+        return 1;
+        #endif
+    } else {
+        #ifdef HAVE_MQTT
+         server::MqttWill will;
+        will.topic   = cfg.mqtt_topic + "/status";
+        will.payload = "{\"status\":\"offline\"}";
+        will.qos     = cfg.mqtt_qos;
+        sub.reset(new  server::MqttSubscriber(
+            cfg.mqtt_client_id, cfg.mqtt_topic, cfg.mqtt_qos,
+            cfg.mqtt_username, cfg.mqtt_password, will));
+        #else
+        LOG_ERR("[Server] MQTT not compiled; use -DHAVE_MQTT=ON");
+        storage.stop();
+         server::platform::net_cleanup();
+        return 1;
+        #endif
+    }
+
+    /* Packet callback — runs in the transport receive thread */
+    uint64_t last_stats_ms = now_ms();
+
+    sub->set_callback([&](const std::string& payload) {
+        uint64_t recv_ms = now_ms();
+
+        auto parsed = validator.parse(payload);
+        if (parsed.result !=  server::ParseResult::OK) {
+            const char* reason = "unknown";
+            if (parsed.result ==  server::ParseResult::MISSING_FIELDS)
+                reason = "missing fields";
+            else if (parsed.result ==  server::ParseResult::OUT_OF_RANGE)
+                reason = "out of range";
+            else if (parsed.result ==  server::ParseResult::INVALID_FORMAT)
+                reason = "invalid format";
+            LOG_WARNF("[Validator] Rejected (%s): %.80s", reason, payload.c_str());
+            return;
+        }
+
+        const  server::DataPacket& pkt = parsed.packet;
+        stats.record(recv_ms, pkt.timestamp_ms, pkt.sequence_id);
+         server::StatsSnapshot snap = stats.snapshot();
+
+        #ifdef HAVE_WEBUI
+        if (webui) {
+            double lat = static_cast<double>(recv_ms)
+            - static_cast<double>(pkt.timestamp_ms);
+            webui->broadcast_data(pkt, lat, snap.avg_jitter_ms);
+
+            uint64_t now = recv_ms;
+            if (now - last_stats_ms >= cfg.web_stats_interval_ms) {
+                webui->broadcast_stats(snap);
+                last_stats_ms = now;
+            }
+        }
+        #else
+        (void)last_stats_ms;
+        #endif
+
+        // Print stats every 1000 packets
+        if (pkt.sequence_id > 0 && pkt.sequence_id % 1000 == 0)
+            LOG_INFOF("[Stats] %s",  server::StatsAnalyzer::format(snap).c_str());
+
+        if (!storage.push(pkt))
+            LOG_WARN("[Server] Ring buffer full — packet dropped");
+    });
+
+    /* Connect or bind */
+    if (!sub->connect(cfg.host, cfg.port)) {
+        LOG_ERRF("[Server] Cannot start on %s:%u", cfg.host.c_str(), (unsigned)cfg.port);
+        storage.stop();
+         server::platform::net_cleanup();
+        return 1;
+    }
+
+    LOG_INFOF("[%s] Running  output=%s  buf=%zu  flush=%zums",
+              sub->name(),
+              storage.filepath().c_str(),
+              cfg.buffer_capacity,
+              cfg.flush_interval_ms);
+
+    #ifdef HAVE_WEBUI
+    if (webui) {
+        webui->set_device_info(cfg.device_model, cfg.device_range_g);
+        LOG_INFOF("[Server] Web UI: http://%s:%u",
+                  cfg.web_host.c_str(), cfg.web_port);
+    }
+    #endif
+
+    std::signal(SIGINT,  on_signal);
+    std::signal(SIGTERM, on_signal);
+
+    std::thread sub_thread([&sub]{ sub->run(); });
+
+    /* Main loop: sleep and print periodic stats */
+    uint64_t last_log_ms = now_ms();
+    while (g_running.load()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        uint64_t now = now_ms();
+        if (now - last_log_ms >= 10000) {
+            LOG_INFOF("[Stats] %s",
+                       server::StatsAnalyzer::format(stats.snapshot()).c_str());
+            last_log_ms = now;
+        }
+    }
+
+    LOG_INFO("[Server] Shutting down...");
+    sub->stop();
+    if (sub_thread.joinable()) sub_thread.join();
+
+    #ifdef HAVE_WEBUI
+    if (webui) webui->stop();
+    #endif
+
+    storage.stop();
+     server::platform::net_cleanup();
+
+    auto final_snap = stats.snapshot();
+    LOG_INFOF("[Server] Done  written=%llu  dropped=%llu  lost=%llu(%.2f%%)  output=%s",
+              (unsigned long long)storage.written_packets(),
+              (unsigned long long)storage.dropped_packets(),
+              (unsigned long long)final_snap.packets_lost,
+              final_snap.loss_rate_pct,
+              storage.filepath().c_str());
+    return 0;
 
 }

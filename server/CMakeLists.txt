@@ -43,6 +43,8 @@ add_executable( ${CMAKE_PROJECT_NAME}_server
     src/webif/web_interface.cpp
     src/crypto/base64.c
     src/crypto/sha1.c
+    src/transport/websocket/ws_subscriber.cpp
+    src/transport/mqtt/mqtt_subscriber.cpp
     ${TRANSPORT_SOURCES}
     )
 
