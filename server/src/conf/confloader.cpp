@@ -1,0 +1,82 @@
+#include <conf/confloader.hpp>
+
+#ifdef HAVE_CONFLOADER
+
+
+void
+apply_conf(const conf_result_t* conf, server::Config& cfg)
+{
+    using T = server::TransportType;
+
+    /* [transport] */
+    const char* mode = conf_get_str(conf, "transport", "mode", nullptr);
+    if (mode) {
+        std::string m(mode);
+        if      (m == "mqtt" || m == "MQTT")      cfg.transport = T::MQTT;
+        else if (m == "ws"   || m == "websocket") cfg.transport = T::WebSocket;
+    }
+    // webinterface flag accepted in [transport] for convenience
+    if (conf_has_key(conf, "transport", "webinterface"))
+        cfg.web_enabled = conf_get_bool(conf, "transport", "webinterface", false);
+
+    /* [connection] */
+    const char* h = conf_get_str(conf, "connection", "host", nullptr);
+    if (h) cfg.host = h;
+    cfg.port = conf_get_uint16(conf, "connection", "port", cfg.port);
+
+    /* [mqtt] */
+    const char* t = conf_get_str(conf, "mqtt", "topic", nullptr);
+    if (t) cfg.mqtt_topic = t;
+    const char* cid = conf_get_str(conf, "mqtt", "client_id", nullptr);
+    if (cid) cfg.mqtt_client_id = cid;
+    if (conf_has_key(conf, "mqtt", "username"))
+        cfg.mqtt_username = conf_get_str(conf, "mqtt", "username", "");
+    if (conf_has_key(conf, "mqtt", "password"))
+        cfg.mqtt_password = conf_get_str(conf, "mqtt", "password", "");
+    cfg.mqtt_qos       = conf_get_int(conf, "mqtt", "qos",       cfg.mqtt_qos);
+    cfg.mqtt_keepalive = conf_get_int(conf, "mqtt", "keepalive", cfg.mqtt_keepalive);
+
+    /* [storage] */
+    const char* out = conf_get_str(conf, "storage", "output", nullptr);
+    if (out && out[0]) cfg.output_file = out;
+    const char* sp = conf_get_str(conf, "storage", "store_path", nullptr);
+    if (sp && sp[0]) cfg.store_path = sp;
+    if (conf_has_key(conf, "storage", "buffer_capacity")) {
+        cfg.buffer_capacity = conf_get_size(conf, "storage", "buffer_capacity", cfg.buffer_capacity);
+        cfg.auto_buffer = false;  // explicit value in INI disables auto-sizing
+    }
+    cfg.flush_interval_ms = conf_get_size(conf, "storage", "flush_interval_ms", cfg.flush_interval_ms);
+
+    /* [logging] */
+    const char* lf = conf_get_str(conf, "logging", "file", nullptr);
+    if (lf) cfg.log_file = lf;
+    cfg.log_also_stderr = conf_get_bool(conf, "logging", "also_stderr", cfg.log_also_stderr);
+    const char* ll = conf_get_str(conf, "logging", "level", nullptr);
+    if (ll) cfg.log_level = ll;
+
+    /* [web] */
+    if (conf_has_key(conf, "web", "enabled"))
+        cfg.web_enabled = conf_get_bool(conf, "web", "enabled", cfg.web_enabled);
+    const char* wh = conf_get_str(conf, "web", "host", nullptr);
+    if (wh && wh[0]) cfg.web_host = wh;
+    cfg.web_port = conf_get_uint16(conf, "web", "port", cfg.web_port);
+    cfg.web_stats_interval_ms = conf_get_uint32(conf, "web", "stats_interval_ms",
+                                               cfg.web_stats_interval_ms);
+
+    /* [device] */
+    const char* dm = conf_get_str(conf, "device", "model", nullptr);
+    if (dm && dm[0]) cfg.device_model = dm;
+    if (conf_has_key(conf, "device", "range_g"))
+        cfg.device_range_g = (float)conf_get_double(conf, "device", "range_g",
+                                                   (double)cfg.device_range_g);
+
+        /* [validator] */
+        const char* ts_str = conf_get_str(conf, "validator", "timesource", nullptr);
+    if (ts_str && ts_str[0]) cfg.timesource = ts_str;
+    if (conf_has_key(conf, "validator", "max_acc_ms2"))
+        cfg.max_acc_ms2 = conf_get_double(conf, "validator", "max_acc_ms2", cfg.max_acc_ms2);
+    if (conf_has_key(conf, "validator", "seq_optional"))
+        cfg.seq_optional = conf_get_bool(conf, "validator", "seq_optional", cfg.seq_optional);
+}
+
+#endif

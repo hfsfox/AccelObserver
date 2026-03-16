@@ -52,7 +52,7 @@ namespace server
         const std::string& filepath() const { return filepath_; }
 
         // Generate path to log file in platform specific default log data dir
-        // format: <log_dir>/data_subscriber_YYYY-MM-DD.log
+        // format: <log_dir>/gaccelserver_YYYY-MM-DD.log
         static std::string default_log_path();
 
     private:

@@ -130,10 +130,10 @@ std::string Logger::default_log_path()
     std::string dir;
 
     #ifdef _WIN32
-        /* %LOCALAPPDATA%\data_subscriber\ */
+        /* %LOCALAPPDATA%\gaccelserver\ */
         char path[MAX_PATH];
         if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, path))) {
-            dir = std::string(path) + "\\data_subscriber\\";
+            dir = std::string(path) + "\\gaccelserver\\log\\";
             CreateDirectoryA(dir.c_str(), NULL);
         } else {
             dir = ".\\";
@@ -141,7 +141,7 @@ std::string Logger::default_log_path()
     #else
         // /var/log/ if have rights, othervise ~/.data_subscriber/
         if (::access("/var/log", W_OK) == 0) {
-            dir = "/var/log/data_subscriber/";
+            dir = "/var/log/gaccelserver/";
             ::mkdir(dir.c_str(), 0755);
         } else {
             const char* home = ::getenv("HOME");
@@ -149,7 +149,11 @@ std::string Logger::default_log_path()
                 struct passwd* pw = ::getpwuid(::getuid());
                 home = pw ? pw->pw_dir : "/tmp";
             }
-            dir = std::string(home) + "/.data_subscriber/";
+            #ifndef __HAIKU__
+                dir = std::string(home) + "/.gaccelserver/log";
+            #else
+                dir = std::string(home) + "/config/settings/gaccelserver/log";
+            #endif
             ::mkdir(dir.c_str(), 0755);
         }
     #endif
@@ -167,7 +171,7 @@ std::string Logger::default_log_path()
 
     char date_buf[32];
     std::strftime(date_buf, sizeof(date_buf), "%Y-%m-%d", &tm_buf);
-    return dir + "data_subscriber_" + date_buf + ".log";
+    return dir + "gaccelserver_" + date_buf + ".log";
 }
 
 std::string log_fmt(const char* fmt, ...)
