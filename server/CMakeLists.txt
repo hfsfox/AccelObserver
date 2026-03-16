@@ -54,11 +54,9 @@ add_executable( ${CMAKE_PROJECT_NAME}_server
     src/format/csv/csv_formatter.cpp
     src/misc/packet_validator.cpp
     src/misc/stats_analyzer.cpp
-    src/webif/web_interface.cpp
-    src/crypto/base64.c
-    src/crypto/sha1.c
     src/transport/websocket/ws_subscriber.cpp
     src/transport/mqtt/mqtt_subscriber.cpp
+    src/sensor/sensor_device.c
     ${TRANSPORT_SOURCES}
     )
 

@@ -9,7 +9,7 @@ apply_conf(const conf_result_t* conf, server::Config& cfg)
     using T = server::TransportType;
 
     /* [transport] */
-    const char* mode = conf_get_str(conf, "transport", "mode", nullptr);
+    const char* mode = conf_get_str(conf, "transport", "protocol", nullptr);
     if (mode) {
         std::string m(mode);
         if      (m == "mqtt" || m == "MQTT")      cfg.transport = T::MQTT;

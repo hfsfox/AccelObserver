@@ -308,7 +308,7 @@ int main(int argc, char* argv[])
     #ifdef HAVE_WEBUI
     if (webui) {
         webui->set_device_info(cfg.device_model, cfg.device_range_g);
-        LOG_INFOF("[Server] Web UI: http://%s:%u",
+        LOG_INFOF("[Server] Web interface: http://%s:%u",
                   cfg.web_host.c_str(), cfg.web_port);
     }
     #endif

@@ -45,11 +45,11 @@ namespace server
         //transport protocol settings
         // CLI:  --protocol ws | mqtt
         // conf: [transport] protocol = ws | mqtt
-        TransportType transport      = TransportType::WebSocket;
+        TransportType transport      = TransportType::MQTT;
 
         // Host: MQTT broker address or WebSocket bind address
         std::string   host           = "localhost";
-        uint16_t      port           = 8080;
+        uint16_t      port           = 1883;
 
         // MQTT-specific fields
         std::string   mqtt_topic     = "sensors/accel";
