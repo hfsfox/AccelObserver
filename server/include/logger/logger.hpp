@@ -71,16 +71,16 @@ namespace server
     };
 
     // Convenience macros used everywhere in server
-    #define LOG_DEBUG(msg) ::subscriber::Logger::instance().debug(msg)
-    #define LOG_INFO(msg)  ::subscriber::Logger::instance().info(msg)
-    #define LOG_WARN(msg)  ::subscriber::Logger::instance().warn(msg)
-    #define LOG_ERR(msg)   ::subscriber::Logger::instance().error(msg)
+    #define LOG_DEBUG(msg) ::server::Logger::instance().debug(msg)
+    #define LOG_INFO(msg)  ::server::Logger::instance().info(msg)
+    #define LOG_WARN(msg)  ::server::Logger::instance().warn(msg)
+    #define LOG_ERR(msg)   ::server::Logger::instance().error(msg)
 
     // formatted version over snprintf
     std::string log_fmt(const char* fmt, ...);
-    #define LOG_INFOF(...)  LOG_INFO(::subscriber::log_fmt(__VA_ARGS__))
-    #define LOG_WARNF(...)  LOG_WARN(::subscriber::log_fmt(__VA_ARGS__))
-    #define LOG_ERRF(...)   LOG_ERR(::subscriber::log_fmt(__VA_ARGS__))
+    #define LOG_INFOF(...)  LOG_INFO(::server::log_fmt(__VA_ARGS__))
+    #define LOG_WARNF(...)  LOG_WARN(::server::log_fmt(__VA_ARGS__))
+    #define LOG_ERRF(...)   LOG_ERR(::server::log_fmt(__VA_ARGS__))
 
 }
 

@@ -139,7 +139,7 @@ std::string Logger::default_log_path()
             dir = ".\\";
         }
     #else
-        // /var/log/ if have rights, othervise ~/.data_subscriber/
+        // /var/log/ if have rights, othervise ~/.gaccelserver/
         if (::access("/var/log", W_OK) == 0) {
             dir = "/var/log/gaccelserver/";
             ::mkdir(dir.c_str(), 0755);

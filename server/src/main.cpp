@@ -10,6 +10,7 @@
 
 #include <core/servertypes.hpp>
 #include <logger/logger.hpp>
+#include <network/net_platform.hpp>
 #include <misc/help.hpp>
 
 #ifdef ENABLE_CONFPARSER
@@ -75,7 +76,7 @@ int main(int argc, char* argv[])
 {
     server::Config cfg;
 
-    /* Step 1: config file */
+    // Step 1: config file
     #ifdef HAVE_CONFPARSER
     {
         const char* explicit_path = extract_config_path(argc, argv);
@@ -102,6 +103,38 @@ int main(int argc, char* argv[])
     }
     #endif
 
-    /* Step 2: CLI overrides config file */
+    // Step 2: CLI overrides config file
     cfg = parse_args(argc, argv, cfg);
+
+    // --dump-config: print resolved values and exit
+    #ifdef HAVE_CONFPARSER
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--dump-config") == 0) {
+            dump_config(cfg);
+            return 0;
+        }
+    }
+    #endif /* HAVE_CONFPARSER */
+
+    // Init Logger
+    {
+        std::string lp = cfg.log_file;
+        if (lp == "default") lp = server::Logger::default_log_path();
+        server::Logger::instance().configure(
+            lp, parse_log_level(cfg.log_level), cfg.log_also_stderr);
+        if (!lp.empty() && lp != "stderr" && lp != "stdout")
+            LOG_INFOF("[Server] Log: %s", lp.c_str());
+    }
+
+    LOG_INFOF("[Server] Device: %s  range=+/-%.1fg",
+              cfg.device_model.c_str(), cfg.device_range_g);
+
+    /* Network */
+    if (!server::platform::net_init())
+    {
+        LOG_ERRF("[Server] net_init: %s",
+                 server::platform::last_socket_error().c_str());
+        return 1;
+    }
+
 }
