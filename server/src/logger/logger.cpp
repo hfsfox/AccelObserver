@@ -9,19 +9,21 @@
 #include <iomanip>
 
 #ifdef _WIN32
-#  ifndef WIN32_LEAN_AND_MEAN
-#    define WIN32_LEAN_AND_MEAN
-#  endif
-#  include <windows.h>
-#  include <shlobj.h>    // for SHGetKnownFolderPath
-#  pragma comment(lib, "shell32.lib")
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #include <windows.h>
+    #include <shlobj.h>    // for SHGetKnownFolderPath
+    #ifdef _MSC_VER
+        #pragma comment(lib, "shell32.lib")
+    #endif
 #else
-#  include <unistd.h>
-#  include <sys/stat.h>
-#  include <pwd.h>
+    #include <unistd.h>
+    #include <sys/stat.h>
+    #include <pwd.h>
 #endif
 
-namespace subscriber
+namespace server
 {
 
 Logger& Logger::instance()
@@ -178,4 +180,4 @@ std::string log_fmt(const char* fmt, ...)
     return buf;
 }
 
-} // namespace subscriber
+}

@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <string>
 
-namespace subscriber
+namespace server
 {
 
     struct DataPacket

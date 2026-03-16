@@ -10,7 +10,7 @@
 #include <mutex>
 #include <cstdint>
 
-namespace subscriber
+namespace server
 {
 
     enum class LogLevel
@@ -82,6 +82,6 @@ namespace subscriber
     #define LOG_WARNF(...)  LOG_WARN(::subscriber::log_fmt(__VA_ARGS__))
     #define LOG_ERRF(...)   LOG_ERR(::subscriber::log_fmt(__VA_ARGS__))
 
-} // namespace subscriber
+}
 
 #endif // __LOGGER_H__
