@@ -16,7 +16,7 @@ apply_conf(const conf_result_t* conf, server::Config& cfg)
         if      (m == "mqtt" || m == "MQTT")      cfg.transport = T::MQTT;
         else if (m == "ws"   || m == "websocket") cfg.transport = T::WebSocket;
     }
-    // webinterface flag accepted in [transport] for convenience
+    // webinterface flag accepted in [transport] for convenience.
     if (conf_has_key(conf, "transport", "webinterface"))
         cfg.web_enabled = conf_get_bool(conf, "transport", "webinterface", false);
 
@@ -36,7 +36,7 @@ apply_conf(const conf_result_t* conf, server::Config& cfg)
         cfg.mqtt_password = conf_get_str(conf, "mqtt", "password", "");
     {
         int qos = conf_get_int(conf, "mqtt", "qos", cfg.mqtt_qos);
-        // FIX: validate QoS range (MQTT spec: 0, 1 or 2 only)
+        // Validate QoS range (MQTT spec allows 0, 1, or 2 only).
         if (qos < 0 || qos > 2) {
             std::fprintf(stderr, "[config] Warning: mqtt.qos=%d out of range (0-2), using 0\n", qos);
             qos = 0;
@@ -44,6 +44,24 @@ apply_conf(const conf_result_t* conf, server::Config& cfg)
         cfg.mqtt_qos = qos;
     }
     cfg.mqtt_keepalive = conf_get_int(conf, "mqtt", "keepalive", cfg.mqtt_keepalive);
+
+    /* [mqtt] Last Will and Testament */
+    const char* wt = conf_get_str(conf, "mqtt", "will_topic", nullptr);
+    if (wt && wt[0]) cfg.mqtt_will_topic = wt;
+
+    const char* wp = conf_get_str(conf, "mqtt", "will_payload", nullptr);
+    if (wp && wp[0]) cfg.mqtt_will_payload = wp;
+
+    if (conf_has_key(conf, "mqtt", "will_qos")) {
+        int wqos = conf_get_int(conf, "mqtt", "will_qos", cfg.mqtt_will_qos);
+        if (wqos < 0 || wqos > 2) {
+            std::fprintf(stderr, "[config] Warning: mqtt.will_qos=%d out of range (0-2), using 0\n", wqos);
+            wqos = 0;
+        }
+        cfg.mqtt_will_qos = wqos;
+    }
+    if (conf_has_key(conf, "mqtt", "will_retain"))
+        cfg.mqtt_will_retain = conf_get_bool(conf, "mqtt", "will_retain", cfg.mqtt_will_retain);
 
     /* [storage] */
     const char* out = conf_get_str(conf, "storage", "output", nullptr);
@@ -55,6 +73,10 @@ apply_conf(const conf_result_t* conf, server::Config& cfg)
         cfg.auto_buffer = false;  // explicit value in INI disables auto-sizing
     }
     cfg.flush_interval_ms = conf_get_size(conf, "storage", "flush_interval_ms", cfg.flush_interval_ms);
+
+    // CSV separator: single-character delimiter between fields.
+    const char* sep = conf_get_str(conf, "storage", "csv_separator", nullptr);
+    if (sep && sep[0]) cfg.csv_separator = sep;
 
     /* [logging] */
     const char* lf = conf_get_str(conf, "logging", "file", nullptr);

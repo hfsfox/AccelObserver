@@ -59,6 +59,17 @@ namespace server
         int           mqtt_qos       = 0;
         int           mqtt_keepalive = 60;
 
+        // Last Will and Testament (LWT).
+        // Published by the broker when the client disconnects unexpectedly.
+        // When mqtt_will_topic is empty the server builds a default topic
+        // by appending "/status" to mqtt_topic (done in main.cpp).
+        // CLI:  --mqtt-will-topic / --mqtt-will-payload / --mqtt-will-retain
+        // INI:  [mqtt] will_topic / will_payload / will_qos / will_retain
+        std::string   mqtt_will_topic   = "";
+        std::string   mqtt_will_payload = "{\"status\":\"offline\"}";
+        int           mqtt_will_qos     = 0;
+        bool          mqtt_will_retain  = false;
+
         // storage settings
         // output_file: exact csv path or auto-generated default format name on store_path address
         // store_path:  directory for auto generated csv data (trailing separator added if missing)
@@ -85,6 +96,11 @@ namespace server
         std::size_t   buffer_capacity    = 4096;
         std::size_t   flush_interval_ms  = 500;
         bool          auto_buffer        = true;  // recalculate from rate when true
+
+        // CSV column separator written between fields in the output file.
+        // CLI:  --csv-sep <char>
+        // INI:  [storage] csv_separator = ;
+        std::string   csv_separator      = ";";
 
         // Logging
         std::string   log_file       = "stderr";

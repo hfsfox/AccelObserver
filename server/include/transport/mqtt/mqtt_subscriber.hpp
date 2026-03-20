@@ -1,9 +1,10 @@
 #pragma once
 // =============================================================================
-// transport/mqtt_subscriber.hpp  (v2)
-// MQTT-подписчик на базе libmosquitto с полной поддержкой брокера.
-// Новое: аутентификация, Last Will, QoS 0/1/2, авто-реконнект с backoff,
-//        произвольный хост (не только localhost), топики с wildcard.
+// transport/mqtt_subscriber.hpp
+// MQTT subscriber built on libmosquitto.
+// Supports authentication, Last Will and Testament, QoS 0/1/2,
+// auto-reconnect with exponential backoff, arbitrary broker host,
+// and topic wildcards.
 // =============================================================================
 #include <transport/isubscriber.hpp>
 #include <atomic>
@@ -16,37 +17,34 @@ struct mosquitto_message;
 namespace server
 {
 
-
-// Параметры Last Will and Testament (опционально)
-
+// Parameters for the MQTT Last Will and Testament message.
+// When topic is empty the LWT feature is disabled.
 struct MqttWill {
-    std::string topic;    ///< пустой → Will не используется
+    std::string topic;
     std::string payload;
-    int         qos  = 0;
+    int         qos    = 0;
     bool        retain = false;
 };
 
-
 class MqttSubscriber : public ISubscriber {
 public:
-    // Минимальный конструктор — только client_id и topic
+    // Minimal constructor — only client_id and topic required.
     explicit MqttSubscriber(const std::string& client_id,
                              const std::string& topic,
                              int qos = 0);
 
-    // Расширенный конструктор — с аутентификацией, Will и keepalive
-    // FIX: keepalive added so cfg.mqtt_keepalive is actually applied
+    // Full constructor — authentication, LWT, and keepalive interval.
     MqttSubscriber(const std::string& client_id,
                    const std::string& topic,
                    int qos,
                    const std::string& username,
                    const std::string& password,
-                   const MqttWill& will     = MqttWill{},
-                   int               keepalive = 60);
+                   const MqttWill&    will      = MqttWill{},
+                   int                keepalive = 60);
 
     ~MqttSubscriber() override;
 
-    MqttSubscriber(const MqttSubscriber&) = delete;
+    MqttSubscriber(const MqttSubscriber&)            = delete;
     MqttSubscriber& operator=(const MqttSubscriber&) = delete;
 
     // ISubscriber interface
@@ -59,7 +57,10 @@ public:
 private:
     void init_mosquitto();
 
-    // Статические callback-и libmosquitto
+    // Clamps qos to [0, 2]; logs a warning if clamping was required.
+    static int validate_qos(int qos, const char* context);
+
+    // libmosquitto static callbacks
     static void on_connect   (struct mosquitto*, void* ud, int rc);
     static void on_disconnect(struct mosquitto*, void* ud, int rc);
     static void on_message   (struct mosquitto*, void* ud,
@@ -84,12 +85,12 @@ private:
     std::atomic<bool> running_       {false};
     std::atomic<bool> connected_     {false};
 
-    // keepalive в секундах: интервал PINGREQ между клиентом и брокером
+    // Keepalive interval in seconds (PINGREQ period between client and broker).
     int               keepalive_     = 60;
 
-    // Параметры авто-реконнекта
+    // Auto-reconnect: exponential backoff between min and max seconds.
     static constexpr int RECONNECT_DELAY_MIN_S = 1;
     static constexpr int RECONNECT_DELAY_MAX_S = 30;
 };
 
-} // namespace subscriber
+} // namespace server

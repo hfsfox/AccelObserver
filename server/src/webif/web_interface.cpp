@@ -16,12 +16,14 @@
 #ifdef _WIN32
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
-#  define CLOSE_SOCKET(s) closesocket(s)
-#  define SEND_FLAGS      0
+#  define CLOSE_SOCKET(s)  closesocket(s)
+#  define SHUT_SOCKET(s)   ::shutdown(s, SD_BOTH)
+#  define SEND_FLAGS       0
 typedef int socklen_t;
 #else
 #  include <sys/socket.h>
 #  include <netinet/in.h>
+#  include <netinet/tcp.h>
 #  include <arpa/inet.h>
 #  include <unistd.h>
 #  ifdef __linux__
@@ -29,22 +31,24 @@ typedef int socklen_t;
 #  else
 #    define SEND_FLAGS     0
 #  endif
-#  define CLOSE_SOCKET(s) ::close(s)
-#  define INVALID_SOCKET  (-1)
+#  define CLOSE_SOCKET(s)  ::close(s)
+#  define SHUT_SOCKET(s)   ::shutdown(s, SHUT_RDWR)
+#  define INVALID_SOCKET   (-1)
 #endif
 
-// FIX 1: MSG_WAITALL is not available on Windows and is unreliable on macOS.
-// Replace all MSG_WAITALL recv() calls with a portable loop that guarantees
-// exactly `len` bytes are received before returning.
+// ---------------------------------------------------------------------------
+// recv_exact_webif
+// Portable replacement for MSG_WAITALL: reads exactly `len` bytes.
+// Returns false on connection close or error.
+// ---------------------------------------------------------------------------
 static bool recv_exact_webif(int fd, void* buf, size_t len)
 {
     char*  p   = static_cast<char*>(buf);
     size_t rem = len;
     while (rem > 0) {
-        // Cast rem to int safely — chunk never exceeds 65536
-        int chunk = static_cast<int>(rem < 65536u ? rem : 65536u);
-        ssize_t n = ::recv(fd, p, static_cast<size_t>(chunk), 0);
-        if (n <= 0) return false;  // connection closed or error
+        int   chunk = static_cast<int>(rem < 65536u ? rem : 65536u);
+        ssize_t n   = ::recv(fd, p, static_cast<size_t>(chunk), 0);
+        if (n <= 0) return false;
         p   += n;
         rem -= static_cast<size_t>(n);
     }
@@ -61,12 +65,14 @@ namespace web {
 
 static const char WS_GUID[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-
 WebInterface::WebInterface()  = default;
 WebInterface::~WebInterface() { stop(); }
 
-
-bool WebInterface::start(const std::string& host, uint16_t port) {
+// ---------------------------------------------------------------------------
+// start
+// ---------------------------------------------------------------------------
+bool WebInterface::start(const std::string& host, uint16_t port)
+{
     host_ = host;
     port_ = port;
 
@@ -110,9 +116,14 @@ bool WebInterface::start(const std::string& host, uint16_t port) {
     return true;
 }
 
-void WebInterface::stop() {
+// ---------------------------------------------------------------------------
+// stop
+// ---------------------------------------------------------------------------
+void WebInterface::stop()
+{
     if (!running_.exchange(false)) return;
 
+    // Closing the listen socket unblocks accept() in accept_loop.
     if (listen_fd_ != INVALID_SOCKET) {
         CLOSE_SOCKET(listen_fd_);
         listen_fd_ = INVALID_SOCKET;
@@ -120,18 +131,15 @@ void WebInterface::stop() {
     if (accept_thread_.joinable())
         accept_thread_.join();
 
+    // Shut down all active client sockets so their recv() calls unblock.
+    // The client threads themselves call CLOSE_SOCKET after exiting their loop.
     {
         std::lock_guard<std::mutex> lk(clients_mutex_);
-        for (int fd : client_fds_) CLOSE_SOCKET(fd);
+        for (int fd : client_fds_) SHUT_SOCKET(fd);
         client_fds_.clear();
     }
 
-    // FIX 2: The original code spin-waited for at most 500 ms and then
-    // returned while detached client threads might still be alive and
-    // accessing 'this' — undefined behaviour / use-after-free.
-    // Correct approach: close all client sockets above (unblocks any
-    // recv() in the client threads) and then wait with a proper timeout
-    // using a condition_variable notified by the thread itself.
+    // Wait for all client threads to finish (up to 3 s).
     {
         std::unique_lock<std::mutex> lk(clients_done_mutex_);
         clients_done_cv_.wait_for(lk, std::chrono::seconds(3),
@@ -139,24 +147,45 @@ void WebInterface::stop() {
     }
 }
 
-void WebInterface::accept_loop() {
+// ---------------------------------------------------------------------------
+// accept_loop
+// ---------------------------------------------------------------------------
+void WebInterface::accept_loop()
+{
     while (running_.load()) {
         struct sockaddr_in caddr{};
         socklen_t clen = sizeof(caddr);
         int cfd = (int)::accept(listen_fd_, (struct sockaddr*)&caddr, &clen);
         if (cfd < 0) break;
+
+        // Enable TCP keep-alive so the OS detects silently dead browser
+        // connections without requiring application-level pings.
+        {
+            int ka = 1;
+            ::setsockopt(cfd, SOL_SOCKET, SO_KEEPALIVE,
+                         (const char*)&ka, sizeof(ka));
+#if defined(__linux__)
+            int idle = 30, interval = 5, probes = 3;
+            ::setsockopt(cfd, IPPROTO_TCP, TCP_KEEPIDLE,    &idle,     sizeof(idle));
+            ::setsockopt(cfd, IPPROTO_TCP, TCP_KEEPINTVL,   &interval, sizeof(interval));
+            ::setsockopt(cfd, IPPROTO_TCP, TCP_KEEPCNT,     &probes,   sizeof(probes));
+#endif
+        }
+
         ++active_clients_;
         std::thread([this, cfd]{
             handle_client(cfd);
-            // FIX 2 (cont.): decrement and notify stop() that all threads finished
             if (--active_clients_ == 0)
                 clients_done_cv_.notify_all();
         }).detach();
     }
 }
 
-
-std::string WebInterface::read_request(int fd) {
+// ---------------------------------------------------------------------------
+// read_request
+// ---------------------------------------------------------------------------
+std::string WebInterface::read_request(int fd)
+{
     char buf[4096];
     int  total = 0;
     while (total < (int)sizeof(buf) - 1) {
@@ -170,8 +199,11 @@ std::string WebInterface::read_request(int fd) {
     return std::string(buf, (size_t)total);
 }
 
-std::string WebInterface::extract_path(const std::string& request) {
-    // First line: "GET /path HTTP/1.1"
+// ---------------------------------------------------------------------------
+// extract_path
+// ---------------------------------------------------------------------------
+std::string WebInterface::extract_path(const std::string& request)
+{
     auto sp1 = request.find(' ');
     if (sp1 == std::string::npos) return "/";
     auto sp2 = request.find(' ', sp1 + 1);
@@ -179,8 +211,11 @@ std::string WebInterface::extract_path(const std::string& request) {
     return request.substr(sp1 + 1, sp2 - sp1 - 1);
 }
 
-
-void WebInterface::handle_client(int fd) {
+// ---------------------------------------------------------------------------
+// handle_client
+// ---------------------------------------------------------------------------
+void WebInterface::handle_client(int fd)
+{
     std::string req = read_request(fd);
     if (req.empty()) { CLOSE_SOCKET(fd); return; }
 
@@ -188,7 +223,6 @@ void WebInterface::handle_client(int fd) {
                   req.find("Upgrade: WebSocket") != std::string::npos);
 
     if (!is_ws) {
-        // Plain HTTP: return a JSON info response with CORS headers.
         std::string path = extract_path(req);
         do_http_response(fd, path);
         CLOSE_SOCKET(fd);
@@ -200,7 +234,7 @@ void WebInterface::handle_client(int fd) {
         return;
     }
 
-    // Send cached device info immediately after upgrade.
+    // Send cached device info immediately after the upgrade.
     {
         std::lock_guard<std::mutex> lk(device_mutex_);
         if (!device_model_.empty()) {
@@ -212,27 +246,39 @@ void WebInterface::handle_client(int fd) {
         }
     }
 
-    // Register for broadcasts.
+    // Register fd for broadcasts BEFORE entering the read loop.
     {
         std::lock_guard<std::mutex> lk(clients_mutex_);
         client_fds_.push_back(fd);
     }
 
+    // Discard incoming frames (browser pings, close frames).
+    // ws_broadcast() may shut down this fd from another thread; that will
+    // cause recv() inside ws_discard_frame() to return an error, which breaks
+    // this loop cleanly.  The fd is NOT closed by ws_broadcast — only this
+    // thread calls CLOSE_SOCKET so there is no double-close.
     while (running_.load()) {
         if (!ws_discard_frame(fd)) break;
     }
 
+    // Remove from broadcast list.  ws_broadcast may have already done this
+    // if it detected a send error on fd; the erase is a no-op in that case.
     {
         std::lock_guard<std::mutex> lk(clients_mutex_);
         client_fds_.erase(
             std::remove(client_fds_.begin(), client_fds_.end(), fd),
             client_fds_.end());
     }
+
+    // This thread is the sole owner of fd at this point.
     CLOSE_SOCKET(fd);
 }
 
-
-bool WebInterface::do_http_response(int fd, const std::string& path) {
+// ---------------------------------------------------------------------------
+// do_http_response
+// ---------------------------------------------------------------------------
+bool WebInterface::do_http_response(int fd, const std::string& path)
+{
     std::string body;
     int code = 200;
     const char* ctype = "application/json";
@@ -240,7 +286,6 @@ bool WebInterface::do_http_response(int fd, const std::string& path) {
     if (path == "/health") {
         body = "{\"status\":\"ok\"}";
     } else {
-        // Root: return server info so Vue dev can discover the WebSocket URL.
         char buf[256];
         std::snprintf(buf, sizeof(buf),
             "{\"server\":\"data_subscriber\","
@@ -257,7 +302,6 @@ bool WebInterface::do_http_response(int fd, const std::string& path) {
     resp << "HTTP/1.1 " << code << " OK\r\n"
          << "Content-Type: " << ctype << "\r\n"
          << "Content-Length: " << body.size() << "\r\n"
-         // CORS headers allow the Vue dev server (different port) to call this endpoint.
          << "Access-Control-Allow-Origin: *\r\n"
          << "Access-Control-Allow-Methods: GET\r\n"
          << "Connection: close\r\n"
@@ -267,21 +311,23 @@ bool WebInterface::do_http_response(int fd, const std::string& path) {
     return send_raw(fd, r.c_str(), r.size());
 }
 
-
-bool WebInterface::do_ws_upgrade(int fd, const std::string& request) {
-    // FIX 4a: HTTP headers are case-insensitive (RFC 7230 §3.2).
-    // Search for the key header in both canonical and lowercase forms.
+// ---------------------------------------------------------------------------
+// do_ws_upgrade
+// ---------------------------------------------------------------------------
+bool WebInterface::do_ws_upgrade(int fd, const std::string& request)
+{
+    // HTTP headers are case-insensitive (RFC 7230 §3.2).
+    // Search for the key header in canonical form first, then lowercase.
     auto find_header_value = [&](const std::string& req,
                                   const char* canonical) -> std::string {
-        // Try exact case first, then tolower the whole header name part
         size_t pos = req.find(canonical);
         if (pos == std::string::npos) {
-            // Try lowercase variant (e.g. "sec-websocket-key: ")
             std::string lower_req = req.substr(0, req.find("\r\n\r\n") + 4);
-            // only lowercase the header portion for comparison
             std::string needle(canonical);
-            for (char& c : needle) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-            for (char& c : lower_req) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            for (char& c : needle)
+                c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            for (char& c : lower_req)
+                c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
             pos = lower_req.find(needle);
             if (pos == std::string::npos) return {};
         }
@@ -289,31 +335,34 @@ bool WebInterface::do_ws_upgrade(int fd, const std::string& request) {
         auto end_pos = req.find("\r\n", pos);
         if (end_pos == std::string::npos) return {};
         std::string val = req.substr(pos, end_pos - pos);
-        // trim leading/trailing whitespace
-        while (!val.empty() && (val.front() == ' ' || val.front() == '\r')) val.erase(val.begin());
-        while (!val.empty() && (val.back()  == ' ' || val.back()  == '\r')) val.pop_back();
+        while (!val.empty() && (val.front() == ' ' || val.front() == '\r'))
+            val.erase(val.begin());
+        while (!val.empty() && (val.back() == ' ' || val.back() == '\r'))
+            val.pop_back();
         return val;
     };
 
     std::string client_key = find_header_value(request, "Sec-WebSocket-Key: ");
     if (client_key.empty()) return false;
 
+    // RFC 6455 §4.2.2: the 101 response must not include
+    // Access-Control-Allow-Origin; non-standard headers in upgrade responses
+    // can cause proxies to reject the connection.
     std::ostringstream resp;
     resp << "HTTP/1.1 101 Switching Protocols\r\n"
          << "Upgrade: websocket\r\n"
          << "Connection: Upgrade\r\n"
          << "Sec-WebSocket-Accept: " << ws_accept_key(client_key) << "\r\n"
-         // FIX 4b: Access-Control-Allow-Origin is NOT part of the WebSocket
-         // upgrade protocol (RFC 6455 §4.2.2). Browsers use the Origin header
-         // for WS access control, not ACAO. Some proxies reject non-standard
-         // headers in 101 responses, causing the upgrade to silently fail.
          << "\r\n";
     std::string r = resp.str();
     return send_raw(fd, r.c_str(), r.size());
 }
 
-
-bool WebInterface::send_raw(int fd, const void* data, size_t len) {
+// ---------------------------------------------------------------------------
+// send_raw
+// ---------------------------------------------------------------------------
+bool WebInterface::send_raw(int fd, const void* data, size_t len)
+{
     const char* p   = static_cast<const char*>(data);
     size_t      rem = len;
     while (rem > 0) {
@@ -325,12 +374,24 @@ bool WebInterface::send_raw(int fd, const void* data, size_t len) {
     return true;
 }
 
-void WebInterface::ws_send_one(int fd, const std::string& json) {
+// ---------------------------------------------------------------------------
+// ws_send_one
+// ---------------------------------------------------------------------------
+void WebInterface::ws_send_one(int fd, const std::string& json)
+{
     std::string frame = ws_encode_frame(json);
     send_raw(fd, frame.data(), frame.size());
 }
 
-void WebInterface::ws_broadcast(const std::string& json) {
+// ---------------------------------------------------------------------------
+// ws_broadcast
+// Sends a frame to all connected browser clients.
+// Dead connections are shut down and removed from the list.
+// The actual CLOSE_SOCKET is performed by the corresponding handle_client
+// thread to avoid double-close races.
+// ---------------------------------------------------------------------------
+void WebInterface::ws_broadcast(const std::string& json)
+{
     std::string frame = ws_encode_frame(json);
 
     std::vector<int> snapshot;
@@ -351,22 +412,31 @@ void WebInterface::ws_broadcast(const std::string& json) {
             client_fds_.erase(
                 std::remove(client_fds_.begin(), client_fds_.end(), fd),
                 client_fds_.end());
-            CLOSE_SOCKET(fd);
+            // Shut down the socket so recv() in handle_client() unblocks and
+            // that thread calls CLOSE_SOCKET.  We must NOT call CLOSE_SOCKET
+            // here because handle_client always closes fd itself — doing so
+            // from two threads causes a double-close and potential fd-reuse bug.
+            SHUT_SOCKET(fd);
         }
     }
 }
 
-bool WebInterface::ws_discard_frame(int fd) {
+// ---------------------------------------------------------------------------
+// ws_discard_frame
+// Reads one incoming WebSocket frame from the browser and discards its
+// payload.  Responds to Ping frames with Pong (RFC 6455 §5.5.2).
+// Returns false on close frame, error, or connection drop.
+// ---------------------------------------------------------------------------
+bool WebInterface::ws_discard_frame(int fd)
+{
     uint8_t hdr[2];
-    // FIX 1 (cont.): replaced MSG_WAITALL with portable recv_exact_webif()
     if (!recv_exact_webif(fd, hdr, 2)) return false;
 
     uint8_t  opcode      = hdr[0] & 0x0F;
     bool     masked      = (hdr[1] & 0x80) != 0;
     uint64_t payload_len = hdr[1] & 0x7F;
 
-    // FIX 5: Close frame
-    if (opcode == 0x08) return false;
+    if (opcode == 0x08) return false;  // Close frame
 
     if (payload_len == 126) {
         uint8_t ext[2];
@@ -385,24 +455,21 @@ bool WebInterface::ws_discard_frame(int fd) {
         if (!recv_exact_webif(fd, mask_key, 4)) return false;
     }
 
-    // Read payload into buffer (needed for Ping echo and for unmasking)
     std::vector<uint8_t> data(static_cast<size_t>(payload_len));
     if (payload_len > 0) {
         if (!recv_exact_webif(fd, data.data(), static_cast<size_t>(payload_len)))
             return false;
-        // Unmask if needed
         if (masked)
             for (size_t i = 0; i < data.size(); ++i)
                 data[i] ^= mask_key[i & 3u];
     }
 
-    // FIX 5: Respond to Ping with Pong (RFC 6455 §5.5.2).
-    // Without this the browser's WS keep-alive times out and drops the
+    // Respond to Ping with Pong (RFC 6455 §5.5.2).
+    // Without this the browser WebSocket keep-alive times out and drops the
     // connection while the server is still broadcasting data.
     if (opcode == 0x09) {
-        // Pong: FIN=1, opcode=0xA, no mask, same payload as ping
         uint8_t pong[2];
-        pong[0] = 0x8A;  // FIN | opcode=Pong
+        pong[0] = 0x8A;  // FIN=1, opcode=Pong
         pong[1] = static_cast<uint8_t>(data.size() & 0x7F);
         send_raw(fd, pong, 2);
         if (!data.empty())
@@ -412,11 +479,15 @@ bool WebInterface::ws_discard_frame(int fd) {
     return true;
 }
 
-std::string WebInterface::ws_encode_frame(const std::string& payload) {
+// ---------------------------------------------------------------------------
+// ws_encode_frame  (RFC 6455 §5.2, server side: no masking)
+// ---------------------------------------------------------------------------
+std::string WebInterface::ws_encode_frame(const std::string& payload)
+{
     std::string frame;
     frame.reserve(payload.size() + 10);
     size_t len = payload.size();
-    frame.push_back('\x81');
+    frame.push_back('\x81');  // FIN=1, opcode=Text
     if (len < 126) {
         frame.push_back((char)(uint8_t)len);
     } else if (len < 65536) {
@@ -432,7 +503,11 @@ std::string WebInterface::ws_encode_frame(const std::string& payload) {
     return frame;
 }
 
-std::string WebInterface::ws_accept_key(const std::string& client_key) {
+// ---------------------------------------------------------------------------
+// ws_accept_key  (RFC 6455 §4.2.2)
+// ---------------------------------------------------------------------------
+std::string WebInterface::ws_accept_key(const std::string& client_key)
+{
     std::string combined = client_key + WS_GUID;
     uint8_t digest[20];
     sha1_compute(reinterpret_cast<const uint8_t*>(combined.c_str()),
@@ -442,16 +517,18 @@ std::string WebInterface::ws_accept_key(const std::string& client_key) {
     return std::string(encoded);
 }
 
+// ---------------------------------------------------------------------------
 
-void WebInterface::set_device_info(const std::string& model, float range_g) {
+void WebInterface::set_device_info(const std::string& model, float range_g)
+{
     std::lock_guard<std::mutex> lk(device_mutex_);
     device_model_   = model;
     device_range_g_ = range_g;
 }
 
 void WebInterface::broadcast_data(const DataPacket& pkt,
-                                    double latency_ms,
-                                    double jitter_ms)
+                                   double latency_ms,
+                                   double jitter_ms)
 {
     if (client_count() == 0) return;
     char buf[256];
@@ -467,15 +544,17 @@ void WebInterface::broadcast_data(const DataPacket& pkt,
     ws_broadcast(buf);
 }
 
-void WebInterface::broadcast_stats(const StatsSnapshot& snap) {
+void WebInterface::broadcast_stats(const StatsSnapshot& snap)
+{
     if (client_count() == 0) return;
     ws_broadcast(StatsAnalyzer::to_json(snap));
 }
 
-size_t WebInterface::client_count() const {
+size_t WebInterface::client_count() const
+{
     std::lock_guard<std::mutex> lk(clients_mutex_);
     return client_fds_.size();
 }
 
-} /* namespace web */
-} /* namespace server */
+} // namespace web
+} // namespace server
