@@ -36,9 +36,9 @@ extern "C"
     #include <transport/mqtt/mqtt_subscriber.hpp>
 #endif
 
-#ifdef HAVE_WEBUI
+//#ifdef HAVE_WEBUI
     #include <webif/web_interface.hpp>
-#endif
+//#endif
 
 // atomic running state for begin and end main event loop
 static std::atomic<bool> g_running{true};
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
     server::StatsAnalyzer stats(200, cfg.web_stats_interval_ms);
 
     /* Web interface */
-    #ifdef HAVE_WEBUI
+    //#ifdef HAVE_WEBUI
     std::unique_ptr<server::web::WebInterface> webif;
     if (cfg.web_enabled)
     {
@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
             webif.reset();
         }
     }
-    #endif
+    //#endif
 
     /* Resolve output path:
      * If output_file is set it is used as-is (exact path or directory prefix).
@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
         stats.record(recv_ms, pkt.timestamp_ms, pkt.sequence_id);
          server::StatsSnapshot snap = stats.snapshot();
 
-        #ifdef HAVE_WEBUI
+        //#ifdef HAVE_WEBUI
         if (webif) {
             double lat = static_cast<double>(recv_ms)
             - static_cast<double>(pkt.timestamp_ms);
@@ -280,9 +280,9 @@ int main(int argc, char* argv[])
                 last_stats_ms = now;
             }
         }
-        #else
+        //#else
         (void)last_stats_ms;
-        #endif
+        //#endif
 
         // Print stats every 1000 packets
         if (pkt.sequence_id > 0 && pkt.sequence_id % 1000 == 0)
@@ -306,13 +306,13 @@ int main(int argc, char* argv[])
               cfg.buffer_capacity,
               cfg.flush_interval_ms);
 
-    #ifdef HAVE_WEBUI
+    //#ifdef HAVE_WEBUI
     if (webif) {
         webif->set_device_info(cfg.device_model, cfg.device_range_g);
         LOG_INFOF("[Server] Web interface: http://%s:%u",
                   cfg.web_host.c_str(), cfg.web_port);
     }
-    #endif
+    //#endif
 
     std::signal(SIGINT,  on_signal);
     std::signal(SIGTERM, on_signal);
@@ -335,9 +335,9 @@ int main(int argc, char* argv[])
     sub->stop();
     if (sub_thread.joinable()) sub_thread.join();
 
-    #ifdef HAVE_WEBUI
+    //#ifdef HAVE_WEBUI
     if (webif) webif->stop();
-    #endif
+    //#endif
 
     storage.stop();
      server::platform::net_cleanup();

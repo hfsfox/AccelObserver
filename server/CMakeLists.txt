@@ -7,6 +7,7 @@ set(CONFPARSER_INCLUDES "")
 set(CONFPARSER_DEFINES "")
 
 set(WEBIF_SOURCES "")
+set(WEBIF_INCLUDES "")
 set(WBIF_DEFINES "")
 
 if(ENABLE_WEBSOCKET)
@@ -16,13 +17,14 @@ if(ENABLE_WEBSOCKET)
     list(APPEND TRANSPORT_DEFINES HAVE_WEBSOCKET)
 endif()
 
-if(HAVE_WEBUI)
-    if(NOT HAVE_WEBSOCKET)
+if(ENABLE_WEBIF)
+    if(NOT ENABLE_WEBSOCKET)
         message(WARNING "WEB Interface requires HAVE_WEBSOCKET (SHA-1/Base64). Disabling.")
-        set(HAVE_WEBUI OFF)
+        set(ENABLE_WEBIF OFF)
     else()
         list(APPEND WEBIF_SOURCES src/webif/web_interface.cpp)
         list(APPEND WEBIF_DEFINES HAVE_WEBUI)
+        #list(APPEND WEBIF_DEFINES HAVE_WEBUI = 1)
         message(STATUS "WEBIF      :          ON")
     endif()
 else()
@@ -44,6 +46,7 @@ include_directories(${CMAKE_PROJECT_NAME}_server PUBLIC
     include
     ${MOSQUITTO_INCLUDE_DIR}
     ${CONFPARSER_INCLUDES}
+    ${WEBIF_INCLUDES}
     )
 
 add_executable( ${CMAKE_PROJECT_NAME}_server
@@ -59,6 +62,7 @@ add_executable( ${CMAKE_PROJECT_NAME}_server
     src/misc/stats_analyzer.cpp
     src/transport/websocket/ws_subscriber.cpp
     src/transport/mqtt/mqtt_subscriber.cpp
+    src/webif/web_interface.cpp
     #src/sensor/sensor_device.c
     ${TRANSPORT_SOURCES}
     ${WEBIF_SOURCES}
