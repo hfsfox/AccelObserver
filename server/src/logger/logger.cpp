@@ -49,15 +49,20 @@ void Logger::configure(const std::string& filepath,
 
     if (file_.is_open()) file_.close();
 
-    if (filepath.empty() || filepath == "stderr") {
+    if (filepath.empty() || filepath == "stderr")
+    {
         // только stderr
         also_stderr_ = true;
-    } else if (filepath == "stdout") {
+    } else if (filepath == "stdout")
+    {
         to_stdout_   = true;
         also_stderr_ = false;
-    } else {
+    }
+    else
+    {
         file_.open(filepath, std::ios::out | std::ios::app);
-        if (!file_.is_open()) {
+        if (!file_.is_open())
+        {
             std::cerr << "[Logger] WARN: cannot open log file: "
                       << filepath << "\n";
             also_stderr_ = true;
@@ -68,7 +73,8 @@ void Logger::configure(const std::string& filepath,
 
 const char* Logger::level_str(LogLevel l)
 {
-    switch (l) {
+    switch (l)
+    {
         case LogLevel::DEBUG: return "DEBUG";
         case LogLevel::INFO:  return "INFO ";
         case LogLevel::WARN:  return "WARN ";
@@ -132,20 +138,27 @@ std::string Logger::default_log_path()
     #ifdef _WIN32
         /* %LOCALAPPDATA%\gaccelserver\ */
         char path[MAX_PATH];
-        if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, path))) {
+        if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, path)))
+        {
             dir = std::string(path) + "\\gaccelserver\\log\\";
             CreateDirectoryA(dir.c_str(), NULL);
-        } else {
+        }
+        else
+        {
             dir = ".\\";
         }
     #else
         // /var/log/ if have rights, othervise ~/.gaccelserver/
-        if (::access("/var/log", W_OK) == 0) {
+        if (::access("/var/log", W_OK) == 0)
+        {
             dir = "/var/log/gaccelserver/";
             ::mkdir(dir.c_str(), 0755);
-        } else {
+        }
+        else
+        {
             const char* home = ::getenv("HOME");
-            if (!home) {
+            if (!home)
+            {
                 struct passwd* pw = ::getpwuid(::getuid());
                 home = pw ? pw->pw_dir : "/tmp";
             }

@@ -17,9 +17,11 @@ namespace server
         //if exist and first row match header - not overvrite
         {
             std::ifstream check(filepath);
-            if (check.is_open()) {
+            if (check.is_open())
+            {
                 std::string first_line;
-                if (std::getline(check, first_line) && first_line == HEADER) {
+                if (std::getline(check, first_line) && first_line == HEADER)
+                {
                     initialized_.insert(filepath);
                     return true;
                 }
