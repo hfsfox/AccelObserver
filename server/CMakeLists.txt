@@ -6,6 +6,9 @@ set(TRANSPORT_LIBS "")
 set(CONFPARSER_INCLUDES "")
 set(CONFPARSER_DEFINES "")
 
+set(WEBIF_SOURCES "")
+set(WBIF_DEFINES "")
+
 if(ENABLE_WEBSOCKET)
     list(APPEND TRANSPORT_SOURCES src/transport/websocket/ws_subscriber.cpp)
     list(APPEND TRANSPORT_SOURCES src/crypto/sha1.c)
@@ -18,8 +21,8 @@ if(HAVE_WEBUI)
         message(WARNING "WEB Interface requires HAVE_WEBSOCKET (SHA-1/Base64). Disabling.")
         set(HAVE_WEBUI OFF)
     else()
-        list(APPEND DS_SOURCES src/webif/web_interface.cpp)
-        list(APPEND DS_DEFINES HAVE_WEBUI)
+        list(APPEND WEBIF_SOURCES src/webif/web_interface.cpp)
+        list(APPEND WEBIF_DEFINES HAVE_WEBUI)
         message(STATUS "WEBIF      :          ON")
     endif()
 else()
@@ -58,6 +61,7 @@ add_executable( ${CMAKE_PROJECT_NAME}_server
     src/transport/mqtt/mqtt_subscriber.cpp
     #src/sensor/sensor_device.c
     ${TRANSPORT_SOURCES}
+    ${WEBIF_SOURCES}
     )
 
 
@@ -80,6 +84,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}_server PRIVATE
     ${MOSQUITTO_LIBRARY}
     )
 target_compile_definitions(${CMAKE_PROJECT_NAME}_server PRIVATE
+    ${WEBIF_DEFINES}
     ${TRANSPORT_DEFINES}
     ${CONFPARSER_DEFINES}
     )
