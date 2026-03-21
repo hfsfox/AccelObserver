@@ -44,12 +44,19 @@ extern "C"
 static std::atomic<bool> g_running{true};
 static void on_signal(int) { g_running = false; }
 
-// Monotonic wall-clock time in milliseconds.
+// Unix epoch wall-clock time in milliseconds.
+// system_clock is required so that recv_ms shares the same epoch as
+// DataPacket::timestamp_ms (which the client writes as Unix epoch ms).
+// Latency = recv_ms - pkt.timestamp_ms is only meaningful when both values
+// are on the same (Unix) epoch.  steady_clock starts at an arbitrary point
+// (system boot) and would produce ~47-year offsets against client timestamps.
+// For the interval comparisons (last_stats_ms, last_log_ms) the potential
+// NTP micro-adjustment is negligible.
 static uint64_t now_ms()
 {
     return static_cast<uint64_t>(
         std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now().time_since_epoch()).count());
+            std::chrono::system_clock::now().time_since_epoch()).count());
 }
 
 static server::LogLevel parse_log_level(const std::string& s)

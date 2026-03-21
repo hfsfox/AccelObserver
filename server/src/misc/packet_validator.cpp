@@ -37,10 +37,16 @@ PacketValidator::PacketValidator(const ValidatorConfig& cfg)
 {}
 
 uint64_t PacketValidator::default_server_time() {
+    // Must use system_clock (Unix epoch), NOT steady_clock (arbitrary epoch,
+    // starts at system boot on Linux/macOS).  When timesource=host this value
+    // is stored in DataPacket::timestamp_ms and written to CSV; it must be a
+    // real Unix timestamp in ms.  Using steady_clock would produce values
+    // ~47 years off relative to any client-side Unix timestamp and make the
+    // CSV timestamp column meaningless.
     using namespace std::chrono;
     return static_cast<uint64_t>(
         duration_cast<milliseconds>(
-            steady_clock::now().time_since_epoch()).count());
+            system_clock::now().time_since_epoch()).count());
 }
 
 TimeSource PacketValidator::parse_timesource(const char* s) {
