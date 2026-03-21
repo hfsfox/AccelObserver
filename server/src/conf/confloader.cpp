@@ -2,7 +2,7 @@
 
 #ifdef HAVE_CONFPARSER
 
-#include <cstdio>
+#include <logger/logger.hpp>
 
 void
 apply_conf(const conf_result_t* conf, server::Config& cfg)
@@ -38,7 +38,7 @@ apply_conf(const conf_result_t* conf, server::Config& cfg)
         int qos = conf_get_int(conf, "mqtt", "qos", cfg.mqtt_qos);
         // Validate QoS range (MQTT spec allows 0, 1, or 2 only).
         if (qos < 0 || qos > 2) {
-            std::fprintf(stderr, "[config] Warning: mqtt.qos=%d out of range (0-2), using 0\n", qos);
+            LOG_WARNF("[config] mqtt.qos=%d out of range (0-2), using 0", qos);
             qos = 0;
         }
         cfg.mqtt_qos = qos;
@@ -55,7 +55,7 @@ apply_conf(const conf_result_t* conf, server::Config& cfg)
     if (conf_has_key(conf, "mqtt", "will_qos")) {
         int wqos = conf_get_int(conf, "mqtt", "will_qos", cfg.mqtt_will_qos);
         if (wqos < 0 || wqos > 2) {
-            std::fprintf(stderr, "[config] Warning: mqtt.will_qos=%d out of range (0-2), using 0\n", wqos);
+            LOG_WARNF("[config] mqtt.will_qos=%d out of range (0-2), using 0", wqos);
             wqos = 0;
         }
         cfg.mqtt_will_qos = wqos;

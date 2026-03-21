@@ -47,8 +47,7 @@ TimeSource PacketValidator::parse_timesource(const char* s) {
     if (!s) return TimeSource::External;
     if (std::strcmp(s, "host")     == 0) return TimeSource::Host;
     if (std::strcmp(s, "external") == 0) return TimeSource::External;
-    std::fprintf(stderr,
-        "[Validator] Unknown timesource '%s'; defaulting to 'external'\n", s);
+    LOG_WARNF("[Validator] Unknown timesource '%s'; defaulting to 'external'", s);
     return TimeSource::External;
 }
 

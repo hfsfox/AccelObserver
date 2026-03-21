@@ -7,6 +7,7 @@
 #include <core/servertypes.hpp>
 
 #include <cstring>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <algorithm>
@@ -60,6 +61,8 @@ extern "C" {
 #include <crypto/base64.h>
 }
 
+#include <logger/logger.hpp>
+
 namespace server {
 namespace web {
 
@@ -78,7 +81,7 @@ bool WebInterface::start(const std::string& host, uint16_t port)
 
     listen_fd_ = (int)::socket(AF_INET, SOCK_STREAM, 0);
     if (listen_fd_ == INVALID_SOCKET) {
-        std::perror("[WebIf] socket");
+        LOG_ERRF("[WebUI] socket() failed: %s", std::strerror(errno));
         return false;
     }
 
@@ -96,12 +99,14 @@ bool WebInterface::start(const std::string& host, uint16_t port)
                            ? INADDR_ANY : inet_addr(host.c_str());
 
     if (::bind(listen_fd_, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-        std::perror("[WebUI] bind");
+        LOG_ERRF("[WebUI] bind() on %s:%u failed: %s",
+                 host.empty() ? "0.0.0.0" : host.c_str(), port_,
+                 std::strerror(errno));
         CLOSE_SOCKET(listen_fd_); listen_fd_ = INVALID_SOCKET;
         return false;
     }
     if (::listen(listen_fd_, 16) < 0) {
-        std::perror("[WebUI] listen");
+        LOG_ERRF("[WebUI] listen() failed: %s", std::strerror(errno));
         CLOSE_SOCKET(listen_fd_); listen_fd_ = INVALID_SOCKET;
         return false;
     }
@@ -109,10 +114,9 @@ bool WebInterface::start(const std::string& host, uint16_t port)
     running_ = true;
     accept_thread_ = std::thread(&WebInterface::accept_loop, this);
 
-    std::printf("[WebUI] WebSocket endpoint: ws://%s:%u/\n"
-                "[WebUI] Info endpoint:      http://%s:%u/\n",
-                host_.empty() ? "0.0.0.0" : host_.c_str(), port_,
-                host_.empty() ? "0.0.0.0" : host_.c_str(), port_);
+    LOG_INFOF("[WebUI] ACTIVE  ws://%s:%u/  http://%s:%u/",
+              host_.empty() ? "0.0.0.0" : host_.c_str(), port_,
+              host_.empty() ? "0.0.0.0" : host_.c_str(), port_);
     return true;
 }
 

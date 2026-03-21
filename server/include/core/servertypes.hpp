@@ -112,7 +112,7 @@ namespace server
         * CLI:  --webiface true|false
         * INI:  [transport] webinterface = true  OR  [web] enabled = true
         */
-        bool          web_enabled    = false;
+        bool          web_enabled    = true;
         std::string   web_host       = "0.0.0.0";
         uint16_t      web_port       = 8088;
         uint32_t      web_stats_interval_ms = 1000;

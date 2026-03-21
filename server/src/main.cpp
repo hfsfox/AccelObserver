@@ -174,9 +174,14 @@ int main(int argc, char* argv[])
     if (cfg.web_enabled) {
         webif.reset(new server::web::WebInterface());
         if (!webif->start(cfg.web_host, cfg.web_port)) {
-            LOG_WARN("[Server] Web interface failed to start");
+            LOG_WARN("[Server] Web interface failed to start — dashboard disabled");
             webif.reset();
+        } else {
+            // set_device_info here so the first connecting browser gets it
+            webif->set_device_info(cfg.device_model, cfg.device_range_g);
         }
+    } else {
+        LOG_INFO("[Server] Web interface disabled (set webinterface=true in [transport])");
     }
 
     // Step 9: resolve output file path.
@@ -287,12 +292,6 @@ int main(int argc, char* argv[])
               cfg.buffer_capacity,
               cfg.flush_interval_ms,
               cfg.csv_separator.c_str());
-
-    if (webif) {
-        webif->set_device_info(cfg.device_model, cfg.device_range_g);
-        LOG_INFOF("[Server] Web interface: http://%s:%u",
-                  cfg.web_host.c_str(), cfg.web_port);
-    }
 
     std::signal(SIGINT,  on_signal);
     std::signal(SIGTERM, on_signal);
