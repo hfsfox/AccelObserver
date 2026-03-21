@@ -80,8 +80,9 @@ bool WebInterface::start(const std::string& host, uint16_t port)
     port_ = port;
 
     listen_fd_ = (int)::socket(AF_INET, SOCK_STREAM, 0);
-    if (listen_fd_ == INVALID_SOCKET) {
-        LOG_ERRF("[WebUI] socket() failed: %s", std::strerror(errno));
+    if (listen_fd_ == INVALID_SOCKET)
+    {
+        LOG_ERRF("[WebIF] socket() failed: %s", std::strerror(errno));
         return false;
     }
 
@@ -98,15 +99,17 @@ bool WebInterface::start(const std::string& host, uint16_t port)
     addr.sin_addr.s_addr = (host.empty() || host == "0.0.0.0")
                            ? INADDR_ANY : inet_addr(host.c_str());
 
-    if (::bind(listen_fd_, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-        LOG_ERRF("[WebUI] bind() on %s:%u failed: %s",
+    if (::bind(listen_fd_, (struct sockaddr*)&addr, sizeof(addr)) < 0)
+    {
+        LOG_ERRF("[WebIF] bind() on %s:%u failed: %s",
                  host.empty() ? "0.0.0.0" : host.c_str(), port_,
                  std::strerror(errno));
         CLOSE_SOCKET(listen_fd_); listen_fd_ = INVALID_SOCKET;
         return false;
     }
-    if (::listen(listen_fd_, 16) < 0) {
-        LOG_ERRF("[WebUI] listen() failed: %s", std::strerror(errno));
+    if (::listen(listen_fd_, 16) < 0)
+    {
+        LOG_ERRF("[WebIF] listen() failed: %s", std::strerror(errno));
         CLOSE_SOCKET(listen_fd_); listen_fd_ = INVALID_SOCKET;
         return false;
     }
@@ -114,7 +117,7 @@ bool WebInterface::start(const std::string& host, uint16_t port)
     running_ = true;
     accept_thread_ = std::thread(&WebInterface::accept_loop, this);
 
-    LOG_INFOF("[WebUI] ACTIVE  ws://%s:%u/  http://%s:%u/",
+    LOG_INFOF("[WebIF] ACTIVE  ws://%s:%u/  http://%s:%u/",
               host_.empty() ? "0.0.0.0" : host_.c_str(), port_,
               host_.empty() ? "0.0.0.0" : host_.c_str(), port_);
     return true;
@@ -128,7 +131,8 @@ void WebInterface::stop()
     if (!running_.exchange(false)) return;
 
     // Closing the listen socket unblocks accept() in accept_loop.
-    if (listen_fd_ != INVALID_SOCKET) {
+    if (listen_fd_ != INVALID_SOCKET)
+    {
         CLOSE_SOCKET(listen_fd_);
         listen_fd_ = INVALID_SOCKET;
     }
@@ -287,9 +291,12 @@ bool WebInterface::do_http_response(int fd, const std::string& path)
     int code = 200;
     const char* ctype = "application/json";
 
-    if (path == "/health") {
+    if (path == "/health")
+    {
         body = "{\"status\":\"ok\"}";
-    } else {
+    }
+    else
+    {
         char buf[256];
         std::snprintf(buf, sizeof(buf),
             "{\"server\":\"data_subscriber\","
@@ -323,9 +330,11 @@ bool WebInterface::do_ws_upgrade(int fd, const std::string& request)
     // HTTP headers are case-insensitive (RFC 7230 §3.2).
     // Search for the key header in canonical form first, then lowercase.
     auto find_header_value = [&](const std::string& req,
-                                  const char* canonical) -> std::string {
+                                  const char* canonical) -> std::string
+                                  {
         size_t pos = req.find(canonical);
-        if (pos == std::string::npos) {
+        if (pos == std::string::npos)
+        {
             std::string lower_req = req.substr(0, req.find("\r\n\r\n") + 4);
             std::string needle(canonical);
             for (char& c : needle)
@@ -369,7 +378,8 @@ bool WebInterface::send_raw(int fd, const void* data, size_t len)
 {
     const char* p   = static_cast<const char*>(data);
     size_t      rem = len;
-    while (rem > 0) {
+    while (rem > 0)
+    {
         ssize_t n = ::send(fd, p, rem, SEND_FLAGS);
         if (n <= 0) return false;
         p   += n;
@@ -405,7 +415,8 @@ void WebInterface::ws_broadcast(const std::string& json)
     }
 
     std::vector<int> dead;
-    for (int fd : snapshot) {
+    for (int fd : snapshot)
+    {
         if (!send_raw(fd, frame.data(), frame.size()))
             dead.push_back(fd);
     }
